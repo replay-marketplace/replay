@@ -1,0 +1,23 @@
+{
+  "template": "example template string",
+  "epic": [
+    {
+      "type": "prompt",
+      "contents": "This is a prompt example",
+      "RO": "Read-only field example"
+    },
+    {
+      "type": "command",
+      "contents": "This is a command example"
+    },
+    {
+      "type": "prompt",
+      "contents": "Another prompt with different content",
+      "RO": "Another RO value"
+    },
+    {
+      "type": "command",
+      "contents": "Another command example"
+    }
+  ]
+}

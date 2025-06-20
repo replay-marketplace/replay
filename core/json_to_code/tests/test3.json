@@ -1,0 +1,4 @@
+{
+    "path_and_filename": "config.json",
+    "contents": "{\n    \"setting1\": \"value1\",\n    \"setting2\": 42\n}"
+} 

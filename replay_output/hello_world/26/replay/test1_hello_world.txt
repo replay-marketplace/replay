@@ -1,0 +1,4 @@
+/TEMPLATE input_const/templates/python_single_file.py
+
+/PROMPT
+Write a python hello world program. 

@@ -1,0 +1,5 @@
+/PROMPT This prompt has multiple read-only files
+/RO src/file1.py
+/RO src/file2.py
+/RO src/dir1/file3.py
+/RO src/dir2/file4.py 

@@ -1,0 +1,8 @@
+/TEMPLATE templates/mixed_template/
+
+/PROMPT First prompt
+/RO src/file1.py
+/PROMPT
+/RO src/dir1/
+/PROMPT Last prompt with a file
+/RO src/file2.py 

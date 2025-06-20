@@ -1,0 +1,167 @@
+[3J[H[2JThis program adds two numbers.
+Enter the first number: Error: Please enter valid numbers.
+output_dir:  replay_output
+code_dir:  replay_output/test0/19/code
+replay_dir:  replay_output/test0/19/replay
+ro_dir:  replay_output/test0/19/read_only
+
+
+Prompt preprocessign
+Running prompt_preprocess2
+Input file: prompts/test0.txt
+Output directory: replay_output/test0/19/replay
+--> template:  input_const/templates/python_single_file.py
+
+
+Prompt 1:
+Write a python program that adds two numbers
+
+
+Prompt 2:
+Make a dir called tests and write some tests in there.
+[('sw_template', {'opcode': <Opcode.TEMPLATE: 'TEMPLATE'>, 'contents': {'path': ['input_const/templates/python_single_file.py']}}), ('prompt_0', {'opcode': <Opcode.PROMPT: 'PROMPT'>, 'contents': {'prompt': 'Write a python program that adds two numbers'}}), ('prompt_1', {'opcode': <Opcode.PROMPT: 'PROMPT'>, 'contents': {'prompt': 'Make a dir called tests and write some tests in there.'}})]
+[('sw_template', 'prompt_0', {}), ('prompt_0', 'prompt_1', {})]
+
+
+sw_template = Opcode.TEMPLATE() {{'path': ['input_const/templates/python_single_file.py']}}
+prompt_0 = Opcode.PROMPT(sw_template) {{'prompt': 'Write a python program that adds two numbers'}}
+prompt_1 = Opcode.PROMPT(prompt_0) {{'prompt': 'Make a dir called tests and write some tests in there.'}}
+
+
+
+Extract RO
+Write a python program that adds two numbers
+
+
+RO list:
+[]
+Make a dir called tests and write some tests in there.
+
+
+RO list:
+[]
+
+
+sw_template = Opcode.TEMPLATE() {{'path': ['input_const/templates/python_single_file.py']}}
+prompt_0 = Opcode.PROMPT(sw_template) {{'prompt': 'Write a python program that adds two numbers'}}
+prompt_1 = Opcode.PROMPT(prompt_0) {{'prompt': 'Make a dir called tests and write some tests in there.'}}
+
+dfs_nodes:  ['sw_template', 'prompt_0', 'prompt_1']
+
+Processing template: input_const/templates/python_single_file.py
+Copied template file to code_dir directory: replay_output/test0/19/code/python_single_file.py
+
+
+
+
+done with template
+
+
+
+
+done with prompt
+
+
+
+
+done with template
+
+Processing prompt: Write a python program that adds two numbers
+
+SUS -->>root, file:  replay_output/test0/19/code     python_single_file.py
+
+
+
+json_object: 
+{
+    "prompt": "Write a python program that adds two numbers",
+    "code_to_edit": [
+        {
+            "path_and_filename": "python_single_file.py",
+            "contents": "\"\"\"\nDescription of what the code does goes here. \n\nDescription of how to run the code goes here. \n\"\"\"\n\ndef main():\n    # Some code goes here\n\nif __name__ == \"__main__\":\n    main()"
+        }
+    ],
+    "read_only_files": [],
+    "commands_to_run": []
+}
+
+
+Claude's response: {
+  "files": [
+    {
+      "path_and_filename": "python_single_file.py",
+      "contents": "\"\"\"\nA simple program that adds two numbers provided by the user.\n\nRun this program from the command line with: python3 python_single_file.py\nFollow the prompts to enter two numbers, and the program will display their sum.\n\"\"\"\n\ndef add_numbers(a, b):\n    \"\"\"\n    Add two numbers and return the result.\n    \n    Args:\n        a (float): The first number\n        b (float): The second number\n        \n    Returns:\n        float: The sum of a and b\n    \"\"\"\n    return a + b\n\ndef main():\n    # Get input from the user\n    print(\"This program adds two numbers.\")\n    try:\n        num1 = float(input(\"Enter the first number: \"))\n        num2 = float(input(\"Enter the second number: \"))\n        \n        # Calculate the result\n        result = add_numbers(num1, num2)\n        \n        # Display the result\n        print(f\"The sum of {num1} and {num2} is {result}\")\n    except ValueError:\n        print(\"Error: Please enter valid numbers.\")\n\nif __name__ == \"__main__\":\n    main()"
+    }
+  ],
+  "commands_to_run": ["python3 python_single_file.py"]
+}
+
+
+files_data:  [{'path_and_filename': 'python_single_file.py', 'contents': '"""\nA simple program that adds two numbers provided by the user.\n\nRun this program from the command line with: python3 python_single_file.py\nFollow the prompts to enter two numbers, and the program will display their sum.\n"""\n\ndef add_numbers(a, b):\n    """\n    Add two numbers and return the result.\n    \n    Args:\n        a (float): The first number\n        b (float): The second number\n        \n    Returns:\n        float: The sum of a and b\n    """\n    return a + b\n\ndef main():\n    # Get input from the user\n    print("This program adds two numbers.")\n    try:\n        num1 = float(input("Enter the first number: "))\n        num2 = float(input("Enter the second number: "))\n        \n        # Calculate the result\n        result = add_numbers(num1, num2)\n        \n        # Display the result\n        print(f"The sum of {num1} and {num2} is {result}")\n    except ValueError:\n        print("Error: Please enter valid numbers.")\n\nif __name__ == "__main__":\n    main()'}]
+
+
+GOING TO RUN COMMAND: python3 python_single_file.py
+
+
+
+
+done with prompt
+
+
+
+
+done with template
+
+Processing prompt: Make a dir called tests and write some tests in there.
+
+SUS -->>root, file:  replay_output/test0/19/code     python_single_file.py
+
+
+
+json_object: 
+{
+    "prompt": "Make a dir called tests and write some tests in there.",
+    "code_to_edit": [
+        {
+            "path_and_filename": "python_single_file.py",
+            "contents": "\"\"\"\nA simple program that adds two numbers provided by the user.\n\nRun this program from the command line with: python3 python_single_file.py\nFollow the prompts to enter two numbers, and the program will display their sum.\n\"\"\"\n\ndef add_numbers(a, b):\n    \"\"\"\n    Add two numbers and return the result.\n    \n    Args:\n        a (float): The first number\n        b (float): The second number\n        \n    Returns:\n        float: The sum of a and b\n    \"\"\"\n    return a + b\n\ndef main():\n    # Get input from the user\n    print(\"This program adds two numbers.\")\n    try:\n        num1 = float(input(\"Enter the first number: \"))\n        num2 = float(input(\"Enter the second number: \"))\n        \n        # Calculate the result\n        result = add_numbers(num1, num2)\n        \n        # Display the result\n        print(f\"The sum of {num1} and {num2} is {result}\")\n    except ValueError:\n        print(\"Error: Please enter valid numbers.\")\n\nif __name__ == \"__main__\":\n    main()"
+        }
+    ],
+    "read_only_files": [],
+    "commands_to_run": []
+}
+
+
+Claude's response: {
+  "files": [
+    {
+      "path_and_filename": "tests/test_add_numbers.py",
+      "contents": "import sys\nimport os\n\n# Add the parent directory to sys.path to import the module\nsys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))\n\nimport unittest\nfrom python_single_file import add_numbers\n\nclass TestAddNumbers(unittest.TestCase):\n    def test_add_positive_numbers(self):\n        self.assertEqual(add_numbers(2, 3), 5)\n        \n    def test_add_negative_numbers(self):\n        self.assertEqual(add_numbers(-2, -3), -5)\n        \n    def test_add_mixed_numbers(self):\n        self.assertEqual(add_numbers(-2, 5), 3)\n        \n    def test_add_zeros(self):\n        self.assertEqual(add_numbers(0, 0), 0)\n        \n    def test_add_floats(self):\n        self.assertAlmostEqual(add_numbers(1.5, 2.5), 4.0)\n\nif __name__ == '__main__':\n    unittest.main()"
+    },
+    {
+      "path_and_filename": "tests/__init__.py",
+      "contents": "# This file makes the tests directory a Python package"
+    }
+  ],
+  "commands_to_run": [
+    "python3 -m unittest discover tests"
+  ]
+}
+
+
+files_data:  [{'path_and_filename': 'tests/test_add_numbers.py', 'contents': "import sys\nimport os\n\n# Add the parent directory to sys.path to import the module\nsys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))\n\nimport unittest\nfrom python_single_file import add_numbers\n\nclass TestAddNumbers(unittest.TestCase):\n    def test_add_positive_numbers(self):\n        self.assertEqual(add_numbers(2, 3), 5)\n        \n    def test_add_negative_numbers(self):\n        self.assertEqual(add_numbers(-2, -3), -5)\n        \n    def test_add_mixed_numbers(self):\n        self.assertEqual(add_numbers(-2, 5), 3)\n        \n    def test_add_zeros(self):\n        self.assertEqual(add_numbers(0, 0), 0)\n        \n    def test_add_floats(self):\n        self.assertAlmostEqual(add_numbers(1.5, 2.5), 4.0)\n\nif __name__ == '__main__':\n    unittest.main()"}, {'path_and_filename': 'tests/__init__.py', 'contents': '# This file makes the tests directory a Python package'}]
+
+
+GOING TO RUN COMMAND: python3 -m unittest discover tests
+
+
+
+
+done with prompt
+
+
+
+Done with replay loop
+
+
+

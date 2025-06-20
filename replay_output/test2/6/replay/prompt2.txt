@@ -1,0 +1,4 @@
+/PROMPT First prompt in sequence
+/PROMPT Second prompt in sequence
+/PROMPT Third prompt in sequence
+/PROMPT Fourth prompt in sequence 

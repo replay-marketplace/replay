@@ -1,0 +1,16 @@
+// Epic IR
+digraph {
+	template_1 [label=TEMPLATE]
+	prompt_3 [label=PROMPT]
+	prompt_5 [label=PROMPT]
+	run_7 [label=RUN]
+	exit_11 [label=EXIT]
+	conditional_node13 [label=CONDITIONAL]
+	run_node_14 [label=RUN]
+	template_1 -> prompt_3
+	prompt_3 -> prompt_5
+	prompt_5 -> run_7
+	run_7 -> conditional_node13
+	conditional_node13 -> exit_11
+	conditional_node13 -> run_node_14
+}

@@ -1,0 +1,50 @@
+test_add_decimals (tests.test_calculator.TestCalculator) ... FAIL
+test_add_mixed_numbers (tests.test_calculator.TestCalculator) ... FAIL
+test_add_negative_numbers (tests.test_calculator.TestCalculator) ... FAIL
+test_add_positive_numbers (tests.test_calculator.TestCalculator) ... FAIL
+test_add_zero (tests.test_calculator.TestCalculator) ... FAIL
+
+======================================================================
+FAIL: test_add_decimals (tests.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/projects/projects/replay2/replay_output/test0/87/code/tests/test_calculator.py", line 24, in test_add_decimals
+    self.assertAlmostEqual(add_numbers(2.5, 3.5), 6.0)  # Should be 6.0, but with bug it's 7.0
+AssertionError: 7.0 != 6.0 within 7 places (1.0 difference)
+
+======================================================================
+FAIL: test_add_mixed_numbers (tests.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/projects/projects/replay2/replay_output/test0/87/code/tests/test_calculator.py", line 18, in test_add_mixed_numbers
+    self.assertEqual(add_numbers(2, -3), -1)  # Should be -1, but with bug it's 0
+AssertionError: 0 != -1
+
+======================================================================
+FAIL: test_add_negative_numbers (tests.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/projects/projects/replay2/replay_output/test0/87/code/tests/test_calculator.py", line 15, in test_add_negative_numbers
+    self.assertEqual(add_numbers(-2, -3), -5)  # Should be -5, but with bug it's -4
+AssertionError: -4 != -5
+
+======================================================================
+FAIL: test_add_positive_numbers (tests.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/projects/projects/replay2/replay_output/test0/87/code/tests/test_calculator.py", line 12, in test_add_positive_numbers
+    self.assertEqual(add_numbers(2, 3), 5)  # Should be 5, but with bug it's 6
+AssertionError: 6 != 5
+
+======================================================================
+FAIL: test_add_zero (tests.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/projects/projects/replay2/replay_output/test0/87/code/tests/test_calculator.py", line 21, in test_add_zero
+    self.assertEqual(add_numbers(5, 0), 5)  # Should be 5, but with bug it's 6
+AssertionError: 6 != 5
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (failures=5)

@@ -1,0 +1,15 @@
+
+/TEMPLATE my_template/type1/
+
+/PROMPT bla1 bla1 
+/PROMPT bla2 bla2222
+
+/RUN
+
+/DEBUG_LOOP
+
+/EXIT
+
+
+
+

@@ -1,0 +1,10 @@
+[
+    {
+        "path_and_filename": "src/main.py",
+        "contents": "def main():\n    print('Main function')\n\nif __name__ == '__main__':\n    main()"
+    },
+    {
+        "path_and_filename": "src/utils/helper.py",
+        "contents": "def helper():\n    return 'Helper function'"
+    }
+] 

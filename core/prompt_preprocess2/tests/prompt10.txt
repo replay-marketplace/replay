@@ -1,0 +1,12 @@
+/PROMPT First prompt with multiple files
+/RO src/file1.py
+/RO src/file2.py
+/RO src/file3.py
+
+/PROMPT Second prompt with directories
+/RO src/dir1/
+/RO src/dir2/
+
+/PROMPT Third prompt with mixed content
+/RO src/dir3/file4.py
+/RO src/file5.py 

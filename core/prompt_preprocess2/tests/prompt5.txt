@@ -1,0 +1,6 @@
+/TEMPLATE templates/complex_template/
+
+/PROMPT This test uses read-only directories
+/RO src/dir1/
+/RO src/dir2/
+/RO src/dir3/ 

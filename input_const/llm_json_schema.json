@@ -1,0 +1,24 @@
+{
+    "prompt": "Write a python hello world program.",
+    "code": [
+        {
+            "path_and_filename": "replay_output/hello_world/39/code/python_single_file.py",
+            "contents": "\"\"\"\nDescription of what the code does goes here. \n\nDescription of how to run the code goes here. \n\"\"\"\n\ndef main():\n    # Some code goes here\n\nif __name__ == \"__main__\":\n    main()"
+        }
+        {
+            "path_and_filename": "replay_output/hello_world/39/code/python_single_file.py",
+            "contents": "\"\"\"\nDescription of what the code does goes here. \n\nDescription of how to run the code goes here. \n\"\"\"\n\ndef main():\n    # Some code goes here\n\nif __name__ == \"__main__\":\n    main()"
+        }
+    ],
+    "read_only": [
+        {
+            "path_and_filename": "replay_output/hello_world/39/code/python_single_file.py",
+            "contents": "\"\"\"\nDescription of what the code does goes here. \n\nDescription of how to run the code goes here. \n\"\"\"\n\ndef main():\n    # Some code goes here\n\nif __name__ == \"__main__\":\n    main()"
+        },
+        {
+            "path_and_filename": "replay_output/hello_world/39/code/python_single_file.py",
+            "contents": "\"\"\"\nDescription of what the code does goes here. \n\nDescription of how to run the code goes here. \n\"\"\"\n\ndef main():\n    # Some code goes here\n\nif __name__ == \"__main__\":\n    main()"
+        }
+    ],
+    "commands_to_run": ["./chmod 755 runme.sh", "./runme.sh"]
+}

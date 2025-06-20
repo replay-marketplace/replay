@@ -1,0 +1,4 @@
+/PROMPT Testing nested read-only paths
+/RO src/dir1/subdir1/file1.py
+/RO src/dir1/subdir2/file2.py
+/RO src/dir2/subdir1/subdir2/file3.py 

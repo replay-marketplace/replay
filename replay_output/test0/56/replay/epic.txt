@@ -1,0 +1,4 @@
+
+template_0 = Opcode.TEMPLATE() {{'path': 'input_const/templates/build_scripts/'}}
+prompt_1 = Opcode.PROMPT(template_0) {{'prompt': "Write a python program that adds two numbers. Don't install new requirements."}}
+prompt_2 = Opcode.PROMPT(prompt_1) {{'prompt': "Make a dir called tests and write some tests in there. Don't install new requirements."}}

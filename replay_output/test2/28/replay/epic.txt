@@ -1,0 +1,4 @@
+prompt_0 = Opcode.PROMPT() {{'prompt': 'First prompt in sequence'}}
+prompt_1 = Opcode.PROMPT(prompt_0) {{'prompt': 'Second prompt in sequence'}}
+prompt_2 = Opcode.PROMPT(prompt_1) {{'prompt': 'Third prompt in sequence'}}
+prompt_3 = Opcode.PROMPT(prompt_2) {{'prompt': 'Fourth prompt in sequence'}}

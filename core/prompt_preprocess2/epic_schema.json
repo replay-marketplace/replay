@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/epic-schema.json",
+  "title": "Epic Schema",
+  "description": "Schema for epic configuration with template and list of prompts/commands",
+  "type": "object",
+  "properties": {
+    "template": {
+      "type": "string",
+      "description": "Template string field"
+    },
+    "epic": {
+      "type": "array",
+      "description": "List of prompts and commands",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "prompt"
+              },
+              "contents": {
+                "type": "string",
+                "description": "Content of the prompt"
+              },
+              "RO": {
+                "type": "string",
+                "description": "Read-only field"
+              }
+            },
+            "required": ["type", "contents", "RO"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "command"
+              },
+              "contents": {
+                "type": "string",
+                "description": "Content of the command"
+              }
+            },
+            "required": ["type", "contents"],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": ["template", "epic"],
+  "additionalProperties": false
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "type": "prompt",
+    "contents": "\\"
+  },
+  {
+    "type": "prompt",
+    "contents": "Write a python hello world program."
+  }
+]

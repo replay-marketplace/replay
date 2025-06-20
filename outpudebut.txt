@@ -1,0 +1,68 @@
+[3J[H[2JInput file: prompts/test0.txt
+Output directory: replay_output/test0/41/replay
+
+
+ir_marker_list:
+['/TEMPLATE input_const/templates/python_single_file.py', '/PROMPT\nWrite a python program that adds two numbers', '/PROMPT\nMake a dir called tests and write some tests in there.']
+
+template_0 = Opcode.TEMPLATE() {{'path': 'input_const/templates/python_single_file.py'}}
+prompt_1 = Opcode.PROMPT(template_0) {{'prompt': 'Write a python program that adds two numbers'}}
+prompt_2 = Opcode.PROMPT(prompt_1) {{'prompt': 'Make a dir called tests and write some tests in there.'}}
+
+
+
+----------------------------------------------------------------
+         PROMPT PREPROCESS 3 : FINAL GRAPH            
+----------------------------------------------------------------
+
+template_0 = Opcode.TEMPLATE() {{'path': 'input_const/templates/python_single_file.py'}}
+prompt_1 = Opcode.PROMPT(template_0) {{'prompt': 'Write a python program that adds two numbers'}}
+prompt_2 = Opcode.PROMPT(prompt_1) {{'prompt': 'Make a dir called tests and write some tests in there.'}}
+
+dfs_nodes:  ['template_0', 'prompt_1', 'prompt_2']
+
+
+--- template: START ----
+
+Processing template: i
+Template file does not exist: i
+1
+--- template: END ----
+--- prompt: START ----
+2
+--- prompt: END ----
+
+
+--- template: START ----
+3
+--- template: END ----
+--- prompt: START ----
+
+Processing prompt: Write a python program that adds two numbers
+
+
+files_data:  [{'path_and_filename': 'add_numbers.py', 'contents': 'def add_numbers(a, b):\n    """\n    Add two numbers and return the result.\n    \n    Args:\n        a (int or float): The first number\n        b (int or float): The second number\n        \n    Returns:\n        int or float: The sum of a and b\n    """\n    return a + b\n\ndef main():\n    # Get input from user\n    print("This program adds two numbers.")\n    try:\n        num1 = float(input("Enter the first number: "))\n        num2 = float(input("Enter the second number: "))\n        \n        # Calculate and display the result\n        result = add_numbers(num1, num2)\n        print(f"The sum of {num1} and {num2} is: {result}")\n    except ValueError:\n        print("Error: Please enter valid numbers.")\n\nif __name__ == "__main__":\n    main()\n'}]
+4
+--- prompt: END ----
+
+
+--- template: START ----
+5
+--- template: END ----
+--- prompt: START ----
+
+Processing prompt: Make a dir called tests and write some tests in there.
+
+SUS -->>root, file:  replay_output/test0/41/code     add_numbers.py
+
+
+files_data:  [{'path_and_filename': 'tests/test_add_numbers.py', 'contents': "import unittest\nimport sys\nimport os\n\n# Add the parent directory to the path so we can import add_numbers\nsys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n\nfrom add_numbers import add_numbers\n\nclass TestAddNumbers(unittest.TestCase):\n    def test_add_positive_integers(self):\n        self.assertEqual(add_numbers(1, 2), 3)\n        self.assertEqual(add_numbers(5, 7), 12)\n    \n    def test_add_negative_integers(self):\n        self.assertEqual(add_numbers(-1, -2), -3)\n        self.assertEqual(add_numbers(-5, -7), -12)\n    \n    def test_add_mixed_integers(self):\n        self.assertEqual(add_numbers(-1, 2), 1)\n        self.assertEqual(add_numbers(5, -7), -2)\n    \n    def test_add_floats(self):\n        self.assertAlmostEqual(add_numbers(1.5, 2.5), 4.0)\n        self.assertAlmostEqual(add_numbers(0.1, 0.2), 0.3, places=1)\n    \n    def test_add_mixed_types(self):\n        self.assertEqual(add_numbers(1, 2.5), 3.5)\n        self.assertEqual(add_numbers(-1.5, 2), 0.5)\n\nif __name__ == '__main__':\n    unittest.main()\n"}, {'path_and_filename': 'tests/__init__.py', 'contents': '# This file is intentionally left empty to make the directory a Python package\n# This allows for easier imports when running tests'}, {'path_and_filename': 'tests/run_all_tests.py', 'contents': 'import unittest\nimport os\nimport sys\n\ndef run_all_tests():\n    # Get the directory containing this script\n    test_dir = os.path.dirname(os.path.abspath(__file__))\n    \n    # Discover and run all tests\n    loader = unittest.TestLoader()\n    suite = loader.discover(test_dir)\n    \n    runner = unittest.TextTestRunner(verbosity=2)\n    result = runner.run(suite)\n    \n    # Return 0 if successful, 1 if there were failures\n    return 0 if result.wasSuccessful() else 1\n\nif __name__ == "__main__":\n    sys.exit(run_all_tests())\n'}]
+6
+--- prompt: END ----
+
+
+
+Done with replay loop
+
+
+

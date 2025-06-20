@@ -1,0 +1,3 @@
+{
+    "prompt": "    /TEMPLATE input_const/templates/python_single_file.py\n    \n    /PROMPT\n    Write a python program that adds two numbers"
+}

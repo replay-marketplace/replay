@@ -1,0 +1,15 @@
+test_add_float_numbers (tests.test_add_numbers.TestAddNumbers)
+Test adding floating point numbers. ... ok
+test_add_mixed_numbers (tests.test_add_numbers.TestAddNumbers)
+Test adding a positive and negative number. ... ok
+test_add_negative_numbers (tests.test_add_numbers.TestAddNumbers)
+Test adding two negative numbers. ... ok
+test_add_positive_numbers (tests.test_add_numbers.TestAddNumbers)
+Test adding two positive numbers. ... ok
+test_add_zero (tests.test_add_numbers.TestAddNumbers)
+Test adding zero to a number. ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+OK

@@ -1,0 +1,3 @@
+sw_template = Opcode.TEMPLATE() {{'path': ['input_const/templates/python_single_file.py']}}
+prompt_0 = Opcode.PROMPT(sw_template) {{'prompt': 'Write a python hello world program.'}}
+prompt_1 = Opcode.PROMPT(prompt_0) {{'prompt': 'Make a directory called tests and write some tests in there.'}}

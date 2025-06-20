@@ -1,0 +1,5 @@
+/TEMPLATE templates/template1/
+/TEMPLATE templates/template2/
+
+/PROMPT This is an invalid test with multiple templates
+/RO src/file1.py 

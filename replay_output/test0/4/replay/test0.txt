@@ -1,0 +1,5 @@
+/PROMPT
+Write a python hello world program. 
+
+/PROMPT
+Make a directory called tests and write some tests in there. 

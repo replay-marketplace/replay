@@ -1,0 +1,8 @@
+
+template_1 = Opcode.TEMPLATE() {{'path': 'my_template/type1/'}}
+prompt_3 = Opcode.PROMPT(template_1) {{'prompt': 'bla1 bla1'}}
+prompt_5 = Opcode.PROMPT(prompt_3) {{'prompt': 'bla2 bla2222'}}
+run_7 = Opcode.RUN(prompt_5) {{'script': 'run.sh'}}
+exit_11 = Opcode.EXIT(conditional_node13) {{}}
+conditional_node13 = Opcode.CONDITIONAL(run_7) {{'iteration_count': 0, 'debug_loop_results': 'debug_loop_results.txt'}}
+run_14 = Opcode.RUN(conditional_node13) {{'script': 'run.sh'}}

@@ -1,0 +1,6 @@
+/PROMPT
+Write a python program that adds multiple numbers. 
+
+/PROMPT
+Make a directory called tests/ and in it write some tests. 
+

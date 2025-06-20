@@ -1,0 +1,2 @@
+prompt_0 = Opcode.PROMPT() {{'prompt': 'Write a python program that adds multiple numbers.'}}
+prompt_1 = Opcode.PROMPT(prompt_0) {{'prompt': 'Make a directory called tests/ and in it write some tests.'}}

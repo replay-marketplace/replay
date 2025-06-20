@@ -1,0 +1,10 @@
+[
+  {
+    "path_and_filename": "./tests/test2/file1.py",
+    "contents": "def calculate_sum(a, b):\n    return a + b\n\ndef main():\n    result = calculate_sum(5, 3)\n    print(f\"Sum is: {result}\")\n\nif __name__ == \"__main__\":\n    main() "
+  },
+  {
+    "path_and_filename": "./tests/test2/nested/file2.py",
+    "contents": "class Calculator:\n    def __init__(self):\n        self.value = 0\n    \n    def add(self, x):\n        self.value += x\n        return self.value\n\nif __name__ == \"__main__\":\n    calc = Calculator()\n    print(calc.add(10)) "
+  }
+]
