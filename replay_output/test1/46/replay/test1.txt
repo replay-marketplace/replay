@@ -3,6 +3,6 @@
 /PROMPT
 Write a python program that adds two numbers. Now intentionlly add a little bug into the code.
 
-/DEBUG_LOOP
+/RUN
 
 

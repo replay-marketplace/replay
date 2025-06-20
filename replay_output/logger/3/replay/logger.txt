@@ -1,0 +1,12 @@
+/TEMPLATE input_const/templates/build_scripts/
+
+/PROMPT
+Make a simple python logger. It should have a simple api to log messages at different levels.
+The levels are numbers 0-4. 0 is the highest priority. 4 is the lowest priority.
+Use different colors for different levels.
+Indent the text by the level number.
+Write some test cases for the logger.
+
+Make a simple program that uses the logger that I can run and see the logger in action. 
+Make a README.md file that has ONLY how to run the simple program that uses logger. 
+/RUN

@@ -1,0 +1,5 @@
+
+template_1 = Opcode.TEMPLATE() {{'path': 'input_const/templates/build_scripts/'}}
+prompt_2 = Opcode.PROMPT(template_1) {{'prompt': 'Make a simple python logger. It should have a simple api to log messages at different levels. The levels are numbers 0-4. 0 is the highest priority. 4 is the lowest priority. Use different colors for different levels. Indent the text by the level number. Write some test cases for the logger. Make a simple program that uses the logger that I can run and see the logger in action. Make a README.md file that has ONLY how to run the simple program that uses logger.'}}
+run_3 = Opcode.RUN(prompt_2) {{'command_to_run': './run_tests.sh 2>&1 | tee ../replay/run_tests_terminal_output.txt', 'passed': 'false', 'if_condition_file': '../replay/run_tests_pass_fail.txt', 'terminal_output_file': '../replay/run_tests_terminal_output.txt'}}
+exit_node_4 = Opcode.EXIT(run_3) {{}}

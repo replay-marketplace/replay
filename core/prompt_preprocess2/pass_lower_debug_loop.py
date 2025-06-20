@@ -54,7 +54,7 @@ def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
     epic.graph.remove_node(debug_loop_node)
 
     # ----- Make a RUN node -----
-    loop_prompt = epic.add_node(opcode=Opcode.PROMPT, contents={"prompt": "Fix this error:"})
+    loop_prompt = epic.add_node(opcode=Opcode.PROMPT, contents={"prompt": "", "terminal_output": "run_tests_terminal_output.txt"})
     loop_run = build_default_run_node(epic)
     
     epic.graph.add_edge(cond, loop_prompt)

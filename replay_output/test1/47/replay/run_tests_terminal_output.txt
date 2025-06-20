@@ -1,0 +1,29 @@
+FFF
+======================================================================
+FAIL: test_add_mixed_numbers (__main__.TestAddNumbers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/replay/replay_output/test1/47/code/test.py", line 20, in test_add_mixed_numbers
+    self.assertEqual(add_numbers(-2, 5), 3)
+AssertionError: -7 != 3
+
+======================================================================
+FAIL: test_add_negative_numbers (__main__.TestAddNumbers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/replay/replay_output/test1/47/code/test.py", line 17, in test_add_negative_numbers
+    self.assertEqual(add_numbers(-2, -3), -5)
+AssertionError: 1 != -5
+
+======================================================================
+FAIL: test_add_positive_numbers (__main__.TestAddNumbers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/replay/replay_output/test1/47/code/test.py", line 14, in test_add_positive_numbers
+    self.assertEqual(add_numbers(2, 3), 5)
+AssertionError: -1 != 5
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+FAILED (failures=3)

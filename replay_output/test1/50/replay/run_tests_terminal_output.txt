@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_add_numbers (__main__.TestAddNumbers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jvasiljevic/continue/replay/replay_output/test1/50/code/test.py", line 14, in test_add_numbers
+    self.assertEqual(add_numbers(2, 3), 5)
+AssertionError: -1 != 5
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)

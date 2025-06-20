@@ -46,12 +46,35 @@ def process_template_node(epic: EpicIR, node: str, code_dir: str):
 # ------------------------------------------------------------
 # Process Opcode.PROMPT
 # ------------------------------------------------------------ 
-def process_prompt_node(client: anthropic.Anthropic, system_instructions: str, epic: EpicIR, node: str, code_dir: str, ro_dir: str):
+def process_prompt_node(client: anthropic.Anthropic, system_instructions: str, epic: EpicIR, node: str, code_dir: str, ro_dir: str, replay_dir: str):
     DEBUG = True
     INDENT = 2
     
-    prompt = epic.graph.nodes[node]['contents']['prompt']
-    debug_print(f"Processing prompt: {prompt}", INDENT, DEBUG)
+    prompt = ""
+
+    # Prepare the prompt text for a "loop debug prompt" node
+    debug_print(f"Processing prompt: {epic.graph.nodes[node]['contents']}", INDENT, DEBUG)
+    # Prepare the Prompt text, check if "terminal_output" exists
+    if epic.graph.nodes[node]['contents'].get('terminal_output') is not None:
+        
+        # Prompt prep
+        print(f"terminal_output: {epic.graph.nodes[node]['contents']['terminal_output']}")
+        with open(os.path.join(replay_dir, epic.graph.nodes[node]['contents']['terminal_output']), "r") as f:
+            terminal_output = f.read()
+            debug_print(f"terminal_output: {terminal_output}", INDENT+2, DEBUG)
+        prompt = f"Fix this error: {terminal_output}"
+        debug_print(f"Processing prompt: {prompt}", INDENT, DEBUG)
+
+        # Delete the used files in the replay_dir:
+        file =  epic.graph.nodes[node]['contents']['terminal_output']
+        os.remove(os.path.join(replay_dir, file))
+        #file =  epic.graph.nodes[node]['contents']['terminal_output']
+        #os.remove(os.path.join(replay_dir, file))
+
+
+    else:
+        prompt = epic.graph.nodes[node]['contents']['prompt']
+        debug_print(f"Processing prompt: {prompt}", INDENT, DEBUG)
 
     # Step 2: Create the agent_json object (prompt, code, read_only, command_to_run)
     llm_json = {}
@@ -161,13 +184,15 @@ def replay(input_prompt_file: str, project_name: str, output_dir: str = "replay_
         
         elif epic.graph.nodes[node]['opcode'] == Opcode.PROMPT:
             debug_print("\n\n--- RUNTIME: start prompt:  ---- ", INDENT, DEBUG)
-            process_prompt_node(client, system_instructions, epic, node, code_dir, ro_dir)
+            process_prompt_node(client, system_instructions, epic, node, code_dir, ro_dir, replay_dir)
             debug_print("--- prompt: END ----", INDENT, DEBUG)  
 
         elif epic.graph.nodes[node]['opcode'] == Opcode.RUN:
             debug_print("\n\n--- RUNTIME: start run ---- ", INDENT, DEBUG)
             process_run_node(epic, node, code_dir, replay_dir)
-            debug_print("--- run: END ----", INDENT, DEBUG)      
+            debug_print("--- run: END ----", INDENT, DEBUG) 
+
+        input("Press Enter to continue...")     
         
     print("\n\n\nDone with replay loop\n\n\n")
 
