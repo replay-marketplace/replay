@@ -38,13 +38,7 @@ The program will:
 3. Generate code based on Claude's responses
 4. Save all outputs in the project directory
 
-## Running Tests
 
-To run the tests:
-
-```bash
-python3 -m pytest tests/
-```
 
 ## Directory Structure
 
