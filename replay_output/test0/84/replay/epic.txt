@@ -1,7 +1,0 @@
-
-template_1 = Opcode.TEMPLATE() {{'path': 'input_const/templates/build_scripts/'}}
-prompt_3 = Opcode.PROMPT(template_1) {{'prompt': "Don't install new requirements. Write a python program that adds two numbers, BUT add a little intentional bug into the code, something super simple, like add 1 to the result. Make a dir called tests and write some tests in there. Don't install new requirements."}}
-run_5 = Opcode.RUN(prompt_3) {{'command_to_run': './run_tests.sh 2>&1 | tee ../replay/run_tests_terminal_output.txt', 'passed': 'false', 'if_condition_file': '../replay/run_tests_pass_fail.txt', 'terminal_output_file': '../replay/run_tests_terminal_output.txt'}}
-exit_node_9 = Opcode.EXIT(conditional_node11) {{}}
-conditional_node11 = Opcode.CONDITIONAL(run_5) {{'iteration_count': 0, 'if_condition': '../replay/run_tests_pass_fail.txt'}}
-run_12 = Opcode.RUN(conditional_node11) {{'script': 'run_tests.sh'}}

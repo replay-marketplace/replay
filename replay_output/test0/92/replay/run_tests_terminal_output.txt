@@ -1,8 +1,0 @@
-test_add_floats (tests.test_calculator.TestCalculator) ... ok
-test_add_integers (tests.test_calculator.TestCalculator) ... ok
-test_add_mixed_types (tests.test_calculator.TestCalculator) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.000s
-
-OK

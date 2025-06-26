@@ -1,7 +1,0 @@
-/TEMPLATE input_const/templates/python_single_file.py
-
-/PROMPT
-Write a python hello world program. 
-
-/PROMPT
-Make a directory called tests and write some tests in there. 

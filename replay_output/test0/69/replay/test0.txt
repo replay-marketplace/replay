@@ -1,7 +1,0 @@
-/TEMPLATE input_const/templates/build_scripts/
-
-/PROMPT
-Write a python program that adds two numbers. Don't install new requirements.
-Make a dir called tests and write some tests in there. Don't install new requirements.
-
-/RUN

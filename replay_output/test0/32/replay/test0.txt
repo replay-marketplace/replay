@@ -1,8 +1,0 @@
-/TEMPLATE input_const/templates/python_single_file.py
-
-/PROMPT
-Write a python program that adds two numbers
-
-/PROMPT
-Make a dir called tests and write some tests in there. 
-

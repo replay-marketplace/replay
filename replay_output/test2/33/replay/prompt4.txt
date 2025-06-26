@@ -1,6 +1,0 @@
-/PROMPT First prompt with a read-only file
-/RO src/file1.py
-/PROMPT Second prompt with multiple read-only files
-/RO src/file2.py
-/RO src/file3.py
-/PROMPT Third prompt with no read-only files 

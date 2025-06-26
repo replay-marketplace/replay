@@ -1,6 +1,0 @@
-prompt_0 = Opcode.PROMPT(ro_0) {{'prompt': 'First prompt with a read-only file\n/RO src/file1.py'}}
-prompt_1 = Opcode.PROMPT(prompt_0, ro_1, ro_2) {{'prompt': 'Second prompt with multiple read-only files\n/RO src/file2.py\n/RO src/file3.py'}}
-prompt_2 = Opcode.PROMPT(prompt_1) {{'prompt': 'Third prompt with no read-only files'}}
-ro_0 = Opcode.READ_ONLY() {{'path': 'src/file1.py'}}
-ro_1 = Opcode.READ_ONLY() {{'path': 'src/file2.py'}}
-ro_2 = Opcode.READ_ONLY() {{'path': 'src/file3.py'}}

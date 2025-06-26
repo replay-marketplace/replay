@@ -6,7 +6,7 @@ import shutil
 import subprocess
 
 from pathlib import Path
-from core.dir_preprocessing import setup_project_directories
+from core.dir_preprocessing import setup_project_directories, post_replay_dir_cleanup
 from core.prompt_preprocess2.processor3 import prompt_preprocess3
 from core.json_to_code.json_to_code import json_to_code
 from core.prompt_preprocess2.ir.ir import EpicIR, Opcode
@@ -150,7 +150,7 @@ def replay(input_prompt_file: str, project_name: str, output_dir: str = "replay_
         system_instructions = f.read()
 
     # Setup project directories
-    code_dir, replay_dir, ro_dir = setup_project_directories(output_dir, project_name)
+    code_dir, replay_dir, ro_dir, project_dir, latest_dir, epic_dir = setup_project_directories(output_dir, project_name)
     #print("output_dir: ", output_dir)
     #print("code_dir: ", code_dir)
     #print("replay_dir: ", replay_dir)
@@ -159,6 +159,7 @@ def replay(input_prompt_file: str, project_name: str, output_dir: str = "replay_
     # Preprocess the input prompt & copy input prompt to replay directory
     epic = prompt_preprocess3(input_prompt_file, replay_dir)
     
+   
     # =======================================================
     #                   RUNTIME: REPLAY LOOP
     # =======================================================
@@ -192,11 +193,11 @@ def replay(input_prompt_file: str, project_name: str, output_dir: str = "replay_
             process_run_node(epic, node, code_dir, replay_dir)
             debug_print("--- run: END ----", INDENT, DEBUG) 
 
-        input("Press Enter to continue...")     
+        #input("Press Enter to continue...")     
         
     print("\n\n\nDone with replay loop\n\n\n")
 
-    
+    post_replay_dir_cleanup(project_dir, latest_dir, epic_dir)
 
 if __name__ == "__main__":
     import sys

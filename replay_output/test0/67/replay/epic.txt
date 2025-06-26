@@ -1,6 +1,0 @@
-
-template_1 = Opcode.TEMPLATE() {{'path': 'input_const/templates/build_scripts/'}}
-prompt_3 = Opcode.PROMPT(template_1) {{'prompt': "Write a python program that adds two numbers. Don't install new requirements."}}
-prompt_5 = Opcode.PROMPT(prompt_3) {{'prompt': "Make a dir called tests and write some tests in there. Don't install new requirements."}}
-run_7 = Opcode.RUN(prompt_5) {{'script': 'run.sh'}}
-exit_node_9 = Opcode.EXIT(run_7) {{}}

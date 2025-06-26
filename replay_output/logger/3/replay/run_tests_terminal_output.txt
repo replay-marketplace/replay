@@ -1,8 +1,0 @@
-test_indentation (test_logger.TestLogger) ... ok
-test_level_filtering (test_logger.TestLogger) ... ok
-test_log_levels (test_logger.TestLogger) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.000s
-
-OK

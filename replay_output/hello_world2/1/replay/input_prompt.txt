@@ -1,2 +1,0 @@
-\\PROMPT
-Write a python hello world program. 

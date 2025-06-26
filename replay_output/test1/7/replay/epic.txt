@@ -1,4 +1,0 @@
-
-template_1 = Opcode.TEMPLATE() {{'path': 'input_const/templates/build_scripts/'}}
-prompt_2 = Opcode.PROMPT(template_1) {{'prompt': 'Write a python program that adds two numbers.'}}
-exit_3 = Opcode.EXIT(prompt_2) {{}}

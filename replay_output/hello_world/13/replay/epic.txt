@@ -1,1 +1,0 @@
-prompt_0 = Opcode.PROMPT() {{'prompt': 'Write a python hello world program.'}}

@@ -1,5 +1,6 @@
 from typing import Tuple
 from .dir_preprocessing import setup_project_directories as _setup_project_directories
+from .dir_preprocessing import post_replay_dir_cleanup as _post_replay_dir_cleanup
 
 def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, str]:
     """
@@ -17,4 +18,10 @@ def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, 
     """
     return _setup_project_directories(output_dir, project_name)
 
-__all__ = ['setup_project_directories'] 
+def post_replay_dir_cleanup(project_dir: str, latest_dir: str, epic_dir: str):
+    """
+    This function is called after the replay directory is created.
+    It will copy the latest epic in to latest/ directory. 
+    """
+    return _post_replay_dir_cleanup(project_dir, latest_dir, epic_dir)
+__all__ = ['setup_project_directories', 'post_replay_dir_cleanup'] 

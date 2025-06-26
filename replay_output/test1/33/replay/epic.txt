@@ -1,8 +1,0 @@
-
-template_1 = Opcode.TEMPLATE() {{'path': 'input_const/templates/build_scripts/'}}
-prompt_2 = Opcode.PROMPT(template_1) {{'prompt': 'Write a python program that adds two numbers. Make it nice.'}}
-exit_node_4 = Opcode.EXIT(conditional_7) {{}}
-pre_run_6 = Opcode.RUN(prompt_2) {{}}
-conditional_7 = Opcode.CONDITIONAL(pre_run_6, run_9) {{'iteration_count': 0, 'iteration_max': 3, 'condition_file_path': '../replay/run_tests_pass_fail.txt', 'condition': False, 'true_node_target': 'exit_node_4', 'false_node_target': ''}}
-prompt_8 = Opcode.PROMPT(conditional_7) {{'prompt': 'Fix this error:'}}
-run_9 = Opcode.RUN(prompt_8) {{'command_to_run': './run_tests.sh 2>&1 | tee ../replay/run_tests_terminal_output.txt', 'passed': 'false', 'if_condition_file': '../replay/run_tests_pass_fail.txt', 'terminal_output_file': '../replay/run_tests_terminal_output.txt'}}
