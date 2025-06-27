@@ -12,6 +12,7 @@ from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, Epic
 from .passes import pass_insert_exit_node
 from .pass_build_graph import pass_build_epic_graph
 from .pass_lower_debug_loop import pass_lower_debug_loop
+from .pass_lower_prompt_file_refs import pass_lower_prompt_file_refs
 
 def prompt_preprocess3(input_file: str, replay_dir: str) -> EpicIR:
     #print(f"Input file: {input_file}")
@@ -26,6 +27,9 @@ def prompt_preprocess3(input_file: str, replay_dir: str) -> EpicIR:
     print_graph(epic.graph, True)
 
     epic = pass_lower_debug_loop(epic)
+    print_graph(epic.graph, True)
+
+    epic = pass_lower_prompt_file_refs(epic)
     print_graph(epic.graph, True)
 
     # Print the nx graph to terminal

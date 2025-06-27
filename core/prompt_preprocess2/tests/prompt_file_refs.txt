@@ -1,0 +1,6 @@
+/TEMPLATE my_template/type1/
+
+/PROMPT This is a prompt with @docs:docs1.txt and @template:template1.txt
+/PROMPT Another prompt with @code:code1.py and @docs:docs2.txt
+
+/RUN
