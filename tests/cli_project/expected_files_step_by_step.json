@@ -1,0 +1,35 @@
+{
+    "steps": [
+        {
+            "step_number": 1,
+            "files": [
+                "templates/template.py",
+                "code/template.py"
+            ]
+        },
+        {
+            "step_number": 2,
+            "files": [
+                "templates/template.py",
+                "code/template.py",
+                "docs/doc1.md"
+            ]
+        },
+        {
+            "step_number": 3,
+            "files": [
+                "templates/template.py",
+                "code/template.py",
+                "docs/doc1.md"
+            ]
+        },
+        {
+            "step_number": 4,
+            "files": [
+                "templates/template.py",
+                "code/template.py",
+                "docs/doc1.md"
+            ]
+        }        
+    ]
+}

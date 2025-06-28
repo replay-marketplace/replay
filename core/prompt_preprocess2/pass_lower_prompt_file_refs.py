@@ -19,20 +19,12 @@ def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
     for prompt_node in prompt_nodes:
         prompt_contents = epic.graph.nodes[prompt_node]['contents']
         prompt_text = prompt_contents.get('prompt', '')
-        new_predecessors = []
-
-        # For each marker, find all matches and create new nodes
+        # Store refs in the prompt node's contents
         for marker, pattern in patterns.items():
-            for match in pattern.findall(prompt_text):
-                file_path = match.strip()
-                # Create a new node for this file reference
-                node_contents = {'file_path': file_path, 'marker': marker}
-                new_node = epic.add_node(opcode=Opcode.READ_ONLY, contents=node_contents)
-                new_predecessors.append(new_node)
-                # Connect the new node to the PROMPT node
-                epic.graph.add_edge(new_node, prompt_node)
-                print(f"Added {marker} node for {file_path} -> {prompt_node}")
-
+            refs = [match.strip() for match in pattern.findall(prompt_text)]
+            prompt_contents[f'{marker}_refs'] = refs
+            if refs:
+                print(f"Added {marker}_refs to {prompt_node}: {refs}")
         # Optionally, you could remove the marker from the prompt text here if desired
         # (not implemented)
 

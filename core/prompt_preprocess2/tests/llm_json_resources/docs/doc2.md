@@ -1,0 +1,1 @@
+Second doc (2) content with 'anything'

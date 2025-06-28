@@ -1,0 +1,7 @@
+{
+    "files": [
+        "templates/template.py",
+        "code/template.py",
+        "docs/doc1.md"
+    ]
+}

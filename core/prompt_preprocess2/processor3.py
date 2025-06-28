@@ -69,6 +69,9 @@ def prompt_preprocess3(input_file: str, replay_dir: str) -> EpicIR:
 
                     # Add an edge from the node_ro to the node_prompt
                     epic.graph.add_edge(node_ro, node)
+
+                    # Store the RO folder path in the prompt node's contents
+                    epic.graph.nodes[node]['contents']['ro_folder'] = ro
         
     
     nx_draw_graph(epic.graph, replay_dir, "epic.png")
