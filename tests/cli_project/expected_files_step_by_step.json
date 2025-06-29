@@ -3,33 +3,86 @@
         {
             "step_number": 1,
             "files": [
-                "templates/template.py",
-                "code/template.py"
+                "test_project_step_by_step/1/docs/doc1.md",
+                "test_project_step_by_step/1/template/template1.py",
+                "test_project_step_by_step/1/code/template1.py",
+                "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/replay_state.json",
+                "test_project_step_by_step/1/replay/epic.txt",
+                "test_project_step_by_step/1/replay/epic.png",
+                "test_project_step_by_step/1/replay/prompt.txt",
+                "test_project_step_by_step/replay/replay_counter.txt"
             ]
         },
         {
             "step_number": 2,
             "files": [
-                "templates/template.py",
-                "code/template.py",
-                "docs/doc1.md"
+                "test_project_step_by_step/1/docs/doc1.md",
+                "test_project_step_by_step/1/template/template1.py",
+                "test_project_step_by_step/1/code/template1.py",
+                "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/replay_state.json",
+                "test_project_step_by_step/1/replay/epic.txt",
+                "test_project_step_by_step/1/replay/epic.png",
+                "test_project_step_by_step/1/replay/prompt.txt",
+                "test_project_step_by_step/replay/replay_counter.txt"
             ]
         },
         {
             "step_number": 3,
             "files": [
-                "templates/template.py",
-                "code/template.py",
-                "docs/doc1.md"
+                "test_project_step_by_step/1/docs/doc1.md",
+                "test_project_step_by_step/1/template/template1.py",
+                "test_project_step_by_step/1/code/template1.py",
+                "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/replay_state.json",
+                "test_project_step_by_step/1/replay/epic.txt",
+                "test_project_step_by_step/1/replay/epic.png",
+                "test_project_step_by_step/1/replay/prompt.txt",
+                "test_project_step_by_step/replay/replay_counter.txt"
             ]
         },
         {
             "step_number": 4,
             "files": [
-                "templates/template.py",
-                "code/template.py",
-                "docs/doc1.md"
+                "test_project_step_by_step/1/docs/doc1.md",
+                "test_project_step_by_step/1/template/template1.py",
+                "test_project_step_by_step/1/code/template1.py",
+                "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/replay_state.json",
+                "test_project_step_by_step/1/replay/epic.txt",
+                "test_project_step_by_step/1/replay/epic.png",
+                "test_project_step_by_step/1/replay/prompt.txt",
+                "test_project_step_by_step/replay/replay_counter.txt"
             ]
-        }        
+        },
+        {
+            "step_number": 5,
+            "files": [
+                "test_project_step_by_step/1/docs/doc1.md",
+                "test_project_step_by_step/1/template/template1.py",
+                "test_project_step_by_step/1/code/template1.py",
+                "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/replay_state.json",
+                "test_project_step_by_step/1/replay/epic.txt",
+                "test_project_step_by_step/1/replay/epic.png",
+                "test_project_step_by_step/1/replay/prompt.txt",
+                "test_project_step_by_step/replay/replay_counter.txt"
+            ]
+        },
+        {
+            "step_number": 6,
+            "files": [
+                "test_project_step_by_step/1/docs/doc1.md",
+                "test_project_step_by_step/1/template/template1.py",
+                "test_project_step_by_step/1/code/template1.py",
+                "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/replay_state.json",
+                "test_project_step_by_step/1/replay/epic.txt",
+                "test_project_step_by_step/1/replay/epic.png",
+                "test_project_step_by_step/1/replay/prompt.txt",
+                "test_project_step_by_step/replay/replay_counter.txt"
+            ]
+        }    
     ]
 }

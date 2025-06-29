@@ -3,6 +3,37 @@ import shutil
 from pathlib import Path
 from typing import Tuple    
 
+def create_symlink_safely(target: str, link_path: str):
+    """
+    Create a symlink safely with cross-platform support.
+    
+    Args:
+        target: The target path to link to
+        link_path: The path where the symlink should be created
+    """
+    try:
+        # Remove existing link if it exists
+        if os.path.exists(link_path):
+            if os.path.islink(link_path):
+                os.unlink(link_path)
+            else:
+                shutil.rmtree(link_path)
+        
+        # Create a relative symlink for better VSCode compatibility
+        target_path = Path(target)
+        link_path_obj = Path(link_path)
+        relative_target = os.path.relpath(target_path, link_path_obj.parent)
+        
+        # Create the symlink with relative path
+        os.symlink(relative_target, link_path)
+        return True
+    except OSError as e:
+        print(f"Warning: Could not create symlink {link_path} -> {target}: {e}")
+        # Fallback: create a regular directory and copy contents
+        print("Falling back to directory copy...")
+        shutil.copytree(target, link_path, dirs_exist_ok=True)
+        return False
+
 def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, str, str, str]:
     """
     Set up project directories for replay and code storage.
@@ -21,18 +52,25 @@ def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, 
     Example directory structure in the output_dir:
     replay_output/                  <--- output_dir
         project_dir/                <--- project_dir
-            1 /
-            2 /
-            3 /                     <--- epic_dir
+            1 /                     # First run
                 code/
                 read_only/
                 replay/
-            latest/                 <--- latest generted replay directory
+                    replay_state.json
+                    epic.png
+                    epic.txt
+                    run_tests_pass_fail.txt
+            2 /                     # Second run  
                 code/
                 read_only/
                 replay/
-            .replay.txt
-                replay_counter.txt
+                    replay_state.json
+                    epic.png
+                    epic.txt
+                    run_tests_pass_fail.txt
+        latest -> 2/                <--- symlink to latest run directory
+        replay/
+            replay_counter.txt
     """
     
     # =======================================================
@@ -56,13 +94,12 @@ def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, 
         print(f"Project directory {project_dir} does not exist. Creating it now...")
         os.makedirs(project_dir, exist_ok=True)
 
-        # Create latest/ dir  
+        # Create replay master directory
         replay_master_dir = os.path.join(project_dir, "replay")
         os.makedirs(replay_master_dir, exist_ok=False)
         
-        # Create .replay/ dir  
+        # Note: latest/ directory will be created as a symlink in post_replay_dir_cleanup
         latest_dir = os.path.join(project_dir, "latest")
-        os.makedirs(latest_dir, exist_ok=False)
 
         # New replay_counter.txt
         counter_file = os.path.join(replay_master_dir, "replay_counter.txt")
@@ -84,9 +121,6 @@ def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, 
             f.write(str(current_count + 1))
         
 
-    
-    
-    
     # =======================================================
     #        Creation of epic_dir
     # =======================================================
@@ -98,39 +132,19 @@ def setup_project_directories(output_dir: str, project_name: str) -> Tuple[str, 
     # Create replay and code subdirectories
     replay_dir = os.path.join(epic_dir, "replay")
     code_dir = os.path.join(epic_dir, "code")
-    ro_dir = os.path.join(epic_dir, "read_only")
     os.makedirs(replay_dir, exist_ok=True)
     os.makedirs(code_dir, exist_ok=True)
-    os.makedirs(ro_dir, exist_ok=True)
     
-    return code_dir, replay_dir, ro_dir, project_dir, latest_dir, epic_dir
+    return code_dir, replay_dir, project_dir, latest_dir, epic_dir
     
 
 def post_replay_dir_cleanup(project_dir: str, latest_dir: str, epic_dir: str):
     """
     This function is called after the replay directory is created.
-    It will copy the latest epic in to latest/ directory. 
+    It will create/update a symlink from latest/ to the most recent epic directory.
     """
     print("\n\nDir post processing:")
-
-    # Delete all files and subdirectories in latest/
-    for item in os.listdir(latest_dir):
-        item_path = os.path.join(latest_dir, item)
-        if os.path.isdir(item_path):
-            shutil.rmtree(item_path)
-        else:
-            os.remove(item_path)
-        print(f"removed {item} from latest/")
-
-    # Copy all files and subdirectories from epic_dir into latest/
-    print(os.listdir(epic_dir))
-    for item in os.listdir(epic_dir):
-        src_path = os.path.join(epic_dir, item)
-        dst_path = os.path.join(latest_dir, item)
-        if os.path.isdir(src_path):
-            shutil.copytree(src_path, dst_path)
-        else:
-            shutil.copy2(src_path, dst_path)
-        print(f"copied {item} to latest/")
+    
+    create_symlink_safely(epic_dir, latest_dir)    
     
     

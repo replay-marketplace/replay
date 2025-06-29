@@ -1,9 +1,0 @@
-This is the first prompt
-It has multiple lines
-\PROMPT
-This is the second prompt
-It also has multiple lines
-And some more content
-\PROMPT
-This is the third prompt
-With different content 

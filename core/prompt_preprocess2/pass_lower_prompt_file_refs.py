@@ -4,6 +4,7 @@ from .ir.ir import Opcode, EpicIR
 import re
 
 def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
+    """Extract @docs:, @template:, and @code: references from prompt text."""
     print("\n\nPASS: Lower Prompt File References")
 
     # Regex patterns for the file reference markers

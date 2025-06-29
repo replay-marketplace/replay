@@ -11,20 +11,18 @@ class PromptNodeProcessor:
     def process(self, replay, node):
         epic = replay.epic
         code_dir = replay.code_dir
-        ro_dir = replay.ro_dir
         project_dir = replay.project_dir
         replay_dir = replay.replay_dir
-        client = self.client
+        client = replay.client
         system_instructions = replay.system_instructions
         contents = epic.graph.nodes[node]['contents']
         logger.debug(f"Processing prompt: {contents}")
         prompt = self._build_prompt_from_contents(contents, replay_dir)
         code_to_edit_paths = [os.path.join(code_dir, ref) for ref in contents.get('code_refs', [])]
-        read_only_paths = self._collect_read_only_paths(epic, node, contents, project_dir)
         llm_json = {
             'prompt': prompt,
             'code_to_edit': self._serialize_files_and_dirs(code_dir, code_to_edit_paths),
-            'read_only_files': self._serialize_files_and_dirs(ro_dir, read_only_paths),
+            'read_only_files': self._serialize_read_only_files(epic, node, contents, project_dir),
             'commands_to_run': []
         }
         llm_json_str = json.dumps(llm_json, indent=4)
@@ -56,29 +54,6 @@ class PromptNodeProcessor:
             logger.debug(f"Processing prompt: {prompt}")
         return prompt
 
-    def _collect_read_only_paths(self, epic, node, contents, project_dir):
-        read_only_paths = []
-        ro_folder = contents.get('ro_folder')
-        docs_refs = contents.get('docs_refs', [])
-        if ro_folder and docs_refs:
-            for ref in docs_refs:
-                path = os.path.join(ro_folder, ref)
-                read_only_paths.append(path)
-                logger.debug(f"Adding readonly docs path: {path}")
-        template_refs = contents.get('template_refs', [])
-        if template_refs:
-            for ref in template_refs:
-                path = os.path.join(project_dir, ref)
-                read_only_paths.append(path)
-                logger.debug(f"Adding readonly template path: {path}")
-        for pred in epic.graph.predecessors(node):
-            pred_data = epic.graph.nodes[pred]
-            if pred_data['opcode'] == Opcode.READ_ONLY and 'path' in pred_data['contents']:
-                path = pred_data['contents']['path']
-                read_only_paths.append(path)
-                logger.debug(f"Adding readonly ro path: {path}")
-        return read_only_paths
-
     def _serialize_files_and_dirs(self, base_dir, paths):
         result = []
         base_dir = Path(base_dir)
@@ -105,4 +80,64 @@ class PromptNodeProcessor:
                             })
                         except Exception as e:
                             logger.error(f"Error reading file {file_path}: {str(e)}")
-        return result 
+        return result
+
+    def _serialize_read_only_files(self, epic, node, contents, project_dir):
+        read_only_files = []
+        session_dir = os.path.dirname(project_dir) if project_dir.endswith('latest') else project_dir
+        
+        # Handle docs references - files come from the docs directory
+        docs_refs = contents.get('docs_refs', [])
+        if docs_refs:
+            docs_dir = os.path.join(session_dir, "docs")
+            for ref in docs_refs:
+                file_path = os.path.join(docs_dir, ref)
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            contents_text = f.read()
+                        read_only_files.append({
+                            "path_and_filename": ref,
+                            "contents": contents_text
+                        })
+                        logger.debug(f"Added readonly docs file: {ref}")
+                    except Exception as e:
+                        logger.error(f"Error reading docs file {file_path}: {str(e)}")
+        
+        # Handle template references - files come from the template directory
+        template_refs = contents.get('template_refs', [])
+        if template_refs:
+            template_dir = os.path.join(session_dir, "template")
+            for ref in template_refs:
+                file_path = os.path.join(template_dir, ref)
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            contents_text = f.read()
+                        read_only_files.append({
+                            "path_and_filename": ref,
+                            "contents": contents_text
+                        })
+                        logger.debug(f"Added readonly template file: {ref}")
+                    except Exception as e:
+                        logger.error(f"Error reading template file {file_path}: {str(e)}")
+        
+        # Handle code references - files come from the code directory
+        code_refs = contents.get('code_refs', [])
+        if code_refs:
+            code_dir = os.path.join(session_dir, "code")
+            for ref in code_refs:
+                file_path = os.path.join(code_dir, ref)
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            contents_text = f.read()
+                        read_only_files.append({
+                            "path_and_filename": ref,
+                            "contents": contents_text
+                        })
+                        logger.debug(f"Added readonly code file: {ref}")
+                    except Exception as e:
+                        logger.error(f"Error reading code file {file_path}: {str(e)}")
+        
+        return read_only_files 

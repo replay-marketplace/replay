@@ -1,3 +1,7 @@
+/TEMPLATE template
+
+/DOCS docs
+
 /PROMPT Hello! We are referencing @docs:doc1.md
 
 /PROMPT Wow! Can I also reference from @template:template1.py

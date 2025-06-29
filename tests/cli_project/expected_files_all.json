@@ -1,7 +1,13 @@
 {
     "files": [
-        "templates/template.py",
-        "code/template.py",
-        "docs/doc1.md"
+        "test_project/1/docs/doc1.md",
+        "test_project/1/template/template1.py",
+        "test_project/1/code/template1.py",
+        "test_project/1/replay/client_instructions_with_json.txt",
+        "test_project/1/replay/replay_state.json",
+        "test_project/1/replay/epic.txt",
+        "test_project/1/replay/epic.png",
+        "test_project/1/replay/prompt.txt",
+        "test_project/replay/replay_counter.txt"
     ]
 }

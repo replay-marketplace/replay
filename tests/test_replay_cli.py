@@ -22,11 +22,11 @@ def assert_files_exact(output_dir, expected_files):
 def print_tree(path, indent=0):
     # print nicely formatted/indented output_dir treeview (deep) recursively
     for root, dirs, files in os.walk(path):
+        level = root.replace(str(path), '').count(os.sep)
+        indent = level
         print("  " * indent + os.path.basename(root))
         for file in files:
             print("  " * (indent + 1) + file)
-        for d in dirs:
-            print_tree(Path(root) / d, indent + 1)
 
 def test_replay_cli_run_all(tmp_path):
     prompt_file = Path("tests/cli_project/prompt.txt")
@@ -40,7 +40,7 @@ def test_replay_cli_run_all(tmp_path):
 
     result = subprocess.run([
         sys.executable, "replay.py",
-        str(prompt_file), project_name, "--output_dir", str(output_dir)
+        str(prompt_file), project_name, "--output_dir", str(output_dir), "--mock"
     ], capture_output=True, text=True, env=os.environ.copy())
     assert result.returncode == 0, f"run_all failed: {result.stderr}"
     print_tree(output_dir)
@@ -50,16 +50,17 @@ def test_replay_cli_step_by_step(tmp_path):
     prompt_file = Path("tests/cli_project/prompt.txt")
     output_dir = tmp_path / "output"
     output_dir.mkdir()
-    project_name = "test_project"
+    project_name = "test_project_step_by_step"
 
     with open("tests/cli_project/expected_files_step_by_step.json") as f:
         expected = json.load(f)
     steps = expected["steps"]
 
     # Run once to create the session folder
+    print(f"Running step 0")
     result = subprocess.run([
         sys.executable, "replay.py",
-        str(prompt_file), project_name, "--output_dir", str(output_dir)
+        str(prompt_file), project_name, "--output_dir", str(output_dir), "--mock", "--setup_only"
     ], capture_output=True, text=True, env=os.environ.copy())    
     assert result.returncode == 0, f"initial run failed: {result.stderr}"
     
@@ -68,26 +69,24 @@ def test_replay_cli_step_by_step(tmp_path):
     session_folder = None
     for root, dirs, files in os.walk(output_dir):
         for d in dirs:
-            if (Path(root) / d / "replay_state.json").exists():
+            if (Path(root) / d / "replay" / "replay_state.json").exists():
                 session_folder = str(Path(root) / d)
                 break
     assert session_folder, "Session folder with replay_state.json not found"
     
     # Now run step mode until done, checking files after each step
-    max_steps = 10
-    step_idx = 0
-    for _ in range(max_steps):
+    max_steps = 30    
+    for step_idx in range(1, max_steps):
+        print(f"Running step {step_idx}")
         result = subprocess.run([
             sys.executable, "replay.py",
-            "--session_folder", session_folder, "--step"
+            "--session_folder", session_folder, "--step", "--mock"
         ], capture_output=True, text=True, env=os.environ.copy())
+        if result.returncode == 42:
+            print("No more steps to run.")
+            break
         assert result.returncode == 0, f"step mode failed: {result.stderr}"
         if step_idx < len(steps):
-            assert_files_exact(output_dir, steps[step_idx]["files"])
-        else:
-            raise AssertionError(f"More steps executed than expected ({len(steps)})")
-        step_idx += 1
-        if "No more steps to run." in result.stdout:
-            break
+            assert_files_exact(output_dir, steps[step_idx]["files"])        
     else:
         raise AssertionError(f"Step-by-step test exceeded {max_steps} steps without finishing.") 

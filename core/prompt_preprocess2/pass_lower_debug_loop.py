@@ -6,8 +6,8 @@ from .ir.ir import Opcode, FE_MARKERS, INTRA_NODE_MARKERS
 from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, EpicIR
 from .pass_build_graph import build_default_run_node
 
-
 def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
+    """Transform DEBUG_LOOP nodes into conditional loops with run nodes."""
     print("\n\nPASS: Lower Debug Loop")
 
     # Find DEBUG_LOOP node, support lowering only one. 
@@ -60,9 +60,5 @@ def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
     epic.graph.add_edge(cond, loop_prompt)
     epic.graph.add_edge(loop_prompt, loop_run)
     epic.graph.add_edge(loop_run, cond)
-
-   
-    
-    
 
     return epic

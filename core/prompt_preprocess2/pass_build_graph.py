@@ -1,4 +1,3 @@
-
 import shutil
 import json
 import networkx as nx
@@ -24,9 +23,12 @@ def add_simple_edge(epic: EpicIR, previous_node: str, new_node: str):
     previous_node = new_node
     return previous_node
 
-def pass_build_epic_graph(input_file: str) -> EpicIR:
+def pass_build_epic_graph(epic: EpicIR, input_file: str = None) -> EpicIR:
+    """Build initial EpicIR graph from input file markers."""
+    if input_file is None:
+        raise ValueError("input_file is required for build_graph pass")
+    
     print("\n\nPASS: Build Epic Graph:")
-    epic = EpicIR()
     ir_marker_list = parse_ir_markers(input_file)
     #print("\n\nir_marker_list:")
     #print(ir_marker_list)
@@ -42,6 +44,9 @@ def pass_build_epic_graph(input_file: str) -> EpicIR:
             new_node = epic.add_node(opcode=Opcode.TEMPLATE, contents={"path": ir_marker_without_first_word})
             previous_node = add_simple_edge(epic, previous_node, new_node)
         
+        elif ir_marker_first_word == "/DOCS":
+            new_node = epic.add_node(opcode=Opcode.DOCS, contents={"path": ir_marker_without_first_word})
+            previous_node = add_simple_edge(epic, previous_node, new_node)
         
         elif ir_marker_first_word == "/PROMPT":
             new_node = epic.add_node(opcode=Opcode.PROMPT, contents={"prompt": ir_marker_without_first_word})
@@ -59,5 +64,10 @@ def pass_build_epic_graph(input_file: str) -> EpicIR:
             new_node = epic.add_node(opcode=Opcode.EXIT, contents={})
             previous_node = add_simple_edge(epic, previous_node, new_node)    
 
-    
     return epic
+
+# Legacy function for backward compatibility
+def pass_build_epic_graph_legacy(input_file: str) -> EpicIR:
+    """Legacy function that creates a new EpicIR and calls the pass."""
+    epic = EpicIR()
+    return pass_build_epic_graph(epic, input_file)
