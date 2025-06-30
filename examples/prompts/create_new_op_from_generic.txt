@@ -28,4 +28,4 @@ Argument  | Description  | Type  | Valid Range  | Required
 idst  | The index of the tile in DST register buffer to perform the computation on  | uint32_t  | Must be less than the size of the DST register buffer  | True 
 
 ```
-To use acos_tile you need compute_kernel_api.h include
+Use #include "compute_kernel_api.h" for the acos_tile function.
