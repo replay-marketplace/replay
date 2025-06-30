@@ -9,9 +9,12 @@ from pathlib import Path
 from core.backend.mock_anthropic import MockAnthropicClient
 
 def assert_files_exact(output_dir, expected_files):
-    # Collect all files in output_dir (relative paths)
+    # Collect all files in output_dir (relative paths), excluding client/ directory
     actual_files = set()
     for root, dirs, files in os.walk(output_dir):
+        # Skip client directories that contain timestamp-dependent files
+        if "client" in Path(root).parts:
+            continue
         for file in files:
             abs_path = Path(root) / file
             rel_path = abs_path.relative_to(output_dir)

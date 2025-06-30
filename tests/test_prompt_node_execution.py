@@ -19,8 +19,8 @@ def test_prompt_node_execution_step_by_step(tmp_path):
     # Create replay instance with mock client
     replay = Replay.from_recipe(input_config, use_mock=True)
     
-    # Get the mock client instance
-    mock_client = replay.client
+    # Get the mock client instance through the wrapper
+    mock_client = replay.client.client  # Access the underlying mock client
     assert isinstance(mock_client, MockAnthropicClient), "Client should be MockAnthropicClient"
     
     # Clear any previous captured data

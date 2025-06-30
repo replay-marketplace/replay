@@ -103,7 +103,7 @@ class Replay:
         self._init_client()
         self._load_system_instructions()        
 
-        if self.state.status in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
+        if self.state.status not in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
             self.status = ReplayStatus.INITIALIZED
 
 
@@ -116,6 +116,7 @@ class Replay:
     ) -> 'Replay':
         """Create a new Replay instance from input configuration (recipe), always creating a new version."""
         # Find next version number
+        logger.info(f"Creating new Replay instance from input configuration: {input_config}")
         project_dir = os.path.join(input_config.output_dir, input_config.project_name)
         os.makedirs(project_dir, exist_ok=True)
         version = cls._get_next_version(project_dir)
@@ -132,6 +133,7 @@ class Replay:
         use_mock: bool = False
     ) -> 'Replay':
         """Load a Replay instance from a project directory checkpoint for a specific version (or latest)."""
+        logger.info(f"Creating new Replay instance from checkpoint: {output_dir} / {project_name} / {version}")
         project_dir = os.path.join(output_dir, project_name)
         if version == "latest":
             version_dir = os.path.realpath(os.path.join(project_dir, "latest"))
@@ -215,73 +217,127 @@ class Replay:
 
     def _copy_reference_content(self):
         """
-        Copy all /TEMPLATE and /DOCS content referenced in the graph to the version's template/ and docs/ folders.
-        Also copy template content to the code directory as initial code structure.
+        Copy all /TEMPLATE and /DOCS content referenced in the graph to the replay directory only.
+        Templates and docs are read-only resources, so we don't need them in version_dir.
         """
-        logger.info("Copying reference content to version folder...")
-        prompt_dir = os.path.dirname(os.path.abspath(self.state.input_config.input_prompt_file))
-        version_dir = self.version_dir
-        template_dst = self.template_dir
-        docs_dst = self.docs_dir
-        code_dst = self.code_dir
+        logger.info("Copying reference content to replay directory...")
+        
+        # Always use the replay directory as the base for path resolution
+        # This ensures all paths are relative to prompt.txt in the replay directory
+        base_dir = self.replay_dir
         import shutil
 
-        # Copy /TEMPLATE directory
-        for node in self.state.execution.epic.graph.nodes():
-            node_data = self.state.execution.epic.graph.nodes[node]
-            if node_data.get('opcode') == Opcode.TEMPLATE:
-                path = node_data.get('contents', {}).get('path')
-                if path:
-                    src_path = os.path.join(prompt_dir, path) if not os.path.isabs(path) else path
-                    if os.path.exists(src_path):
-                        if os.path.isdir(src_path):
-                            # Copy to template directory
-                            if os.path.exists(template_dst):
-                                shutil.rmtree(template_dst)
-                            shutil.copytree(src_path, template_dst)
-                            logger.info(f"Copied TEMPLATE dir: {src_path} -> {template_dst}")
-                            
-                            # Copy to code directory as initial structure
-                            if os.path.exists(code_dst):
-                                shutil.rmtree(code_dst)
-                            shutil.copytree(src_path, code_dst)
-                            logger.info(f"Copied TEMPLATE dir to code: {src_path} -> {code_dst}")
-                        elif os.path.isfile(src_path):
-                            # Copy to template directory
-                            os.makedirs(template_dst, exist_ok=True)
-                            shutil.copy2(src_path, os.path.join(template_dst, os.path.basename(src_path)))
-                            logger.info(f"Copied TEMPLATE file: {src_path} -> {template_dst}")
-                            
-                            # Copy to code directory
-                            os.makedirs(code_dst, exist_ok=True)
-                            shutil.copy2(src_path, os.path.join(code_dst, os.path.basename(src_path)))
-                            logger.info(f"Copied TEMPLATE file to code: {src_path} -> {code_dst}")
-                        else:
-                            logger.warning(f"TEMPLATE path is not a file or directory: {src_path}")
-                    else:
-                        logger.warning(f"TEMPLATE path does not exist: {src_path}")
+        def resolve_source_path(path):
+            """Resolve source path based on whether this is a new run or checkpoint load."""
+            prompt_file_path = os.path.abspath(self.state.input_config.input_prompt_file)
+            replay_dir_path = os.path.abspath(base_dir)
+            
+            logger.debug(f"resolve_source_path: path={path}")
+            logger.debug(f"resolve_source_path: prompt_file_path={prompt_file_path}")
+            logger.debug(f"resolve_source_path: replay_dir_path={replay_dir_path}")
+            
+            # Check if this is a checkpoint load by seeing if the prompt file is in the replay directory
+            if os.path.dirname(prompt_file_path) == replay_dir_path:
+                # This is a checkpoint load - resolve from replay directory
+                resolved = os.path.join(base_dir, path) if not os.path.isabs(path) else path
+                logger.debug(f"resolve_source_path: checkpoint load, resolved={resolved}")
+                return resolved
+            else:
+                # This is a new run - try multiple resolution strategies
+                if os.path.isabs(path):
+                    # Strategy 1: Absolute path
+                    logger.debug(f"resolve_source_path: absolute path, resolved={path}")
+                    return path
+                
+                prompt_dir = os.path.dirname(prompt_file_path)
+                prompt_parent_dir = os.path.dirname(prompt_dir)
+                
+                # Strategy 2: Relative to prompt file directory
+                candidate1 = os.path.join(prompt_dir, path)
+                if os.path.exists(candidate1):
+                    logger.debug(f"resolve_source_path: found relative to prompt dir, resolved={candidate1}")
+                    return candidate1
+                
+                # Strategy 3: Relative to prompt dir's parent
+                candidate2 = os.path.join(prompt_parent_dir, path)
+                if os.path.exists(candidate2):
+                    logger.debug(f"resolve_source_path: found relative to prompt parent dir, resolved={candidate2}")
+                    return candidate2
+                
+                raise ValueError(f"Path does not exist: {path}")                
 
-        # Copy /DOCS directory
+        def copy_to_replay_only(src_path, replay_path):
+            """Copy file/directory to replay directory only (read-only resources)."""
+            if not os.path.exists(src_path):
+                logger.warning(f"Path does not exist: {src_path}")
+                return False
+            
+            # Copy to replay directory only
+            if os.path.isdir(src_path):
+                if os.path.exists(replay_path):
+                    shutil.rmtree(replay_path)
+                shutil.copytree(src_path, replay_path)
+                logger.info(f"Copied directory to replay: {src_path} -> {replay_path}")
+            elif os.path.isfile(src_path):
+                os.makedirs(base_dir, exist_ok=True)
+                shutil.copy2(src_path, replay_path)
+                logger.info(f"Copied file to replay: {src_path} -> {replay_path}")
+            else:
+                logger.warning(f"Path is not a file or directory: {src_path}")
+                return False
+            
+            return True
+
+        def copy_template_to_code(src_path, replay_path):
+            """Copy template to replay directory and also to code directory as initial structure."""
+            if not os.path.exists(src_path):
+                logger.warning(f"Path does not exist: {src_path}")
+                return False
+            
+            # Copy to replay directory first
+            if os.path.isdir(src_path):
+                if os.path.exists(replay_path):
+                    shutil.rmtree(replay_path)
+                shutil.copytree(src_path, replay_path)
+                logger.info(f"Copied template directory to replay: {src_path} -> {replay_path}")
+                
+                # Also copy to code directory as initial structure
+                if os.path.exists(self.code_dir):
+                    shutil.rmtree(self.code_dir)
+                shutil.copytree(replay_path, self.code_dir)
+                logger.info(f"Copied template directory to code: {replay_path} -> {self.code_dir}")
+            elif os.path.isfile(src_path):
+                os.makedirs(base_dir, exist_ok=True)
+                shutil.copy2(src_path, replay_path)
+                logger.info(f"Copied template file to replay: {src_path} -> {replay_path}")
+                
+                # Also copy to code directory
+                os.makedirs(self.code_dir, exist_ok=True)
+                shutil.copy2(replay_path, os.path.join(self.code_dir, os.path.basename(src_path)))
+                logger.info(f"Copied template file to code: {replay_path} -> {self.code_dir}")
+            else:
+                logger.warning(f"Path is not a file or directory: {src_path}")
+                return False
+            
+            return True
+
+        # Copy all referenced resources to replay directory only
         for node in self.state.execution.epic.graph.nodes():
             node_data = self.state.execution.epic.graph.nodes[node]
-            if node_data.get('opcode') == Opcode.DOCS:
+            opcode = node_data.get('opcode')
+            
+            if opcode == Opcode.TEMPLATE:
                 path = node_data.get('contents', {}).get('path')
                 if path:
-                    src_path = os.path.join(prompt_dir, path) if not os.path.isabs(path) else path
-                    if os.path.exists(src_path):
-                        if os.path.isdir(src_path):
-                            if os.path.exists(docs_dst):
-                                shutil.rmtree(docs_dst)
-                            shutil.copytree(src_path, docs_dst)
-                            logger.info(f"Copied DOCS dir: {src_path} -> {docs_dst}")
-                        elif os.path.isfile(src_path):
-                            os.makedirs(docs_dst, exist_ok=True)
-                            shutil.copy2(src_path, os.path.join(docs_dst, os.path.basename(src_path)))
-                            logger.info(f"Copied DOCS file: {src_path} -> {docs_dst}")
-                        else:
-                            logger.warning(f"DOCS path is not a file or directory: {src_path}")
-                    else:
-                        logger.warning(f"DOCS path does not exist: {src_path}")
+                    src_path = resolve_source_path(path)
+                    replay_path = os.path.join(self.template_dir, os.path.basename(path))
+                    copy_template_to_code(src_path, replay_path)
+            elif opcode == Opcode.DOCS:
+                path = node_data.get('contents', {}).get('path')
+                if path:
+                    src_path = resolve_source_path(path)
+                    replay_path = os.path.join(self.docs_dir, os.path.basename(path))
+                    copy_to_replay_only(src_path, replay_path)
 
         logger.info("Reference content copy complete.")
 
@@ -312,13 +368,17 @@ class Replay:
             
         if self.use_mock:
             from core.backend.mock_anthropic import MockAnthropicClient
-            self.client = MockAnthropicClient()
+            base_client = MockAnthropicClient()
         else:
             api_key = os.environ.get("ANTHROPIC_API_KEY")
             if not api_key:
                 raise RuntimeError("ANTHROPIC_API_KEY environment variable not set")
             import anthropic
-            self.client = anthropic.Anthropic(api_key=api_key)            
+            base_client = anthropic.Anthropic(api_key=api_key)
+        
+        # Wrap the client to save all requests and responses
+        from core.backend.client_wrapper import ClientWrapper
+        self.client = ClientWrapper(base_client, self.version_dir)
 
     def _load_system_instructions(self):
         try:
@@ -334,8 +394,8 @@ class Replay:
         self.version_dir = os.path.join(self.project_dir, version)
         self.replay_dir = os.path.join(self.version_dir, "replay")
         self.code_dir = os.path.join(self.version_dir, "code")
-        self.docs_dir = os.path.join(self.version_dir, "docs")
-        self.template_dir = os.path.join(self.version_dir, "template")
+        self.docs_dir = os.path.join(self.replay_dir, "docs")
+        self.template_dir = os.path.join(self.replay_dir, "template")
         os.makedirs(self.replay_dir, exist_ok=True)
         os.makedirs(self.code_dir, exist_ok=True)
         os.makedirs(self.docs_dir, exist_ok=True)

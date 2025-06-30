@@ -80,7 +80,7 @@ def prompt_preprocess3(input_file: str, replay_dir: str) -> EpicIR:
     os.makedirs(passes_dir, exist_ok=True)
     
     # Copy input file to replay directory
-    shutil.copy(input_file, replay_dir)
+    shutil.copy(input_file, os.path.join(replay_dir, "prompt.txt"))
     
     # Step 1: Parse the prompt file into initial graph
     epic = build_initial_graph(input_file)

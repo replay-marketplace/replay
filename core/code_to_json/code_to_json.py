@@ -3,7 +3,7 @@ import json
 import argparse
 from typing import List, Dict
 
-from helpers.utils import debug_print
+from core.helpers.utils import debug_print
 
 def code_to_json(input_dir: str) -> List[Dict[str, str]]:
     """
