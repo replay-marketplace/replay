@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class PromptNodeProcessor:
     def process(self, replay, node):
-        epic = replay.epic
+        epic = replay.state.execution.epic
         code_dir = replay.code_dir
         project_dir = replay.project_dir
         replay_dir = replay.replay_dir

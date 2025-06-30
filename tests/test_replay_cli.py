@@ -65,14 +65,6 @@ def test_replay_cli_step_by_step(tmp_path):
     assert result.returncode == 0, f"initial run failed: {result.stderr}"
     
     print_tree(output_dir)
-
-    session_folder = None
-    for root, dirs, files in os.walk(output_dir):
-        for d in dirs:
-            if (Path(root) / d / "replay" / "replay_state.json").exists():
-                session_folder = str(Path(root) / d)
-                break
-    assert session_folder, "Session folder with replay_state.json not found"
     
     # Now run step mode until done, checking files after each step
     max_steps = 30    
@@ -80,7 +72,7 @@ def test_replay_cli_step_by_step(tmp_path):
         print(f"Running step {step_idx}")
         result = subprocess.run([
             sys.executable, "replay.py",
-            "--session_folder", session_folder, "--step", "--mock"
+            project_name, "--output_dir", str(output_dir), "--step", "--mock"
         ], capture_output=True, text=True, env=os.environ.copy())
         if result.returncode == 42:
             print("No more steps to run.")

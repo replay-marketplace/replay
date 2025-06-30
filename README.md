@@ -11,6 +11,7 @@ This program processes input prompts using Claude AI and generates code based on
 - **Conditional Logic**: Built-in support for conditional execution and loops
 - **Code Generation**: Generate and run code with automatic testing
 - **State Management**: Persistent state for resuming interrupted executions
+- **Versioned Output**: Each run is saved in a numbered versioned directory, with a `latest` symlink for convenience
 
 ## Installation
 
@@ -44,17 +45,23 @@ pip install -e ".[dev]"
 # Set your API key
 export ANTHROPIC_API_KEY='your-api-key-here'
 
-# Run a prompt file
-python replay.py input_prompt.txt my_project
+# Run a prompt file (creates a new versioned run)
+python replay.py input_prompt.txt my_project --output_dir replay_output
 
-# Run step by step
-python replay.py --step --session_folder replay_output/my_project/latest input_prompt.txt my_project
+# Run step by step (using the latest version by default)
+python replay.py my_project --output_dir replay_output --step
+
+# To select a specific version (e.g., version 2):
+python replay.py my_project --output_dir replay_output --step --version 2
 ```
+
+- All outputs are saved under `replay_output/<project_name>/<version>/`.
+- The symlink `replay_output/<project_name>/latest` always points to the most recent version.
 
 ### Programmatic Usage
 
 ```python
-from core import Replay, InputConfig
+from core.backend.replay import Replay, InputConfig
 
 # Create configuration
 config = InputConfig(
@@ -64,33 +71,33 @@ config = InputConfig(
 )
 
 # Create and run replay
-replay = Replay(input_config=config)
+replay = Replay.from_recipe(config)
 replay.run_all()
 ```
 
-## Project Structure
+## Output Directory Structure
 
 ```
-replay/
-├── core/                          # Main package
-│   ├── backend/                   # Execution engine
-│   │   ├── replay.py             # Main Replay class
-│   │   ├── registry.py           # Node processor registry
-│   │   └── *_node_processor.py   # Node processors
-│   ├── prompt_preprocess2/        # Prompt preprocessing
-│   │   ├── processor3.py         # Main processor
-│   │   ├── ir/                   # Intermediate representation
-│   │   └── passes/               # Graph transformation passes
-│   ├── code_to_json/             # Code to JSON conversion
-│   ├── json_to_code/             # JSON to code conversion
-│   └── dir_preprocessing/        # Directory setup utilities
-├── examples/                      # Usage examples
-├── tests/                         # Test suite
-├── input_const/                   # Input constants and templates
-├── replay_output/                 # Generated output
-├── pyproject.toml                 # Project configuration
-└── replay.py                      # CLI entry point
+replay_output/
+└── my_project/
+    ├── 1/                # First run (version 1)
+    │   ├── code/
+    │   ├── docs/
+    │   ├── template/
+    │   └── replay/
+    │       ├── replay_state.json
+    │       ├── epic.png
+    │       ├── epic.txt
+    │       ├── passes/
+    │       └── ...
+    ├── 2/                # Second run (version 2)
+    │   └── ...
+    └── latest -> 2/      # Symlink to latest version
 ```
+
+- Each run creates a new numbered version directory.
+- The `latest` symlink always points to the most recent version.
+- All intermediate and final files are saved under the appropriate version directory.
 
 ## Development
 
@@ -125,26 +132,6 @@ pytest -m integration  # Integration tests only
 
 
 
-## Examples
-
-### Basic Example
-
-See `examples/basic_usage.py` for a simple example of using the replay package.
-
-### Step-by-Step Execution
-
-See `examples/step_by_step_execution.py` for an example of executing prompts step by step.
-
-### Running Examples
-
-```bash
-# Run basic example
-python examples/basic_usage.py
-
-# Run step-by-step example
-python examples/step_by_step_execution.py
-```
-
 ## Prompt Format
 
 The replay system supports a rich prompt format with special markers:
@@ -165,7 +152,7 @@ The replay system supports a rich prompt format with special markers:
 ### Input Configuration
 
 ```python
-from core import InputConfig
+from core.backend.replay import InputConfig
 
 config = InputConfig(
     input_prompt_file="prompt.txt",    # Path to prompt file

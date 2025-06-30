@@ -10,7 +10,8 @@ class PassInfo:
         self.name = name
 
         # Auto-generate name from function name if not provided                
-        if self.name is None:
+        # Generate name from function name if not provided        
+        if name is None or name == "": 
             func_name = func.__name__
             if func_name.startswith('pass_'):
                 self.name = func_name[5:]  # Remove 'pass_' prefix
@@ -24,7 +25,7 @@ class PassRegistry:
         self._registry = {}
         self._pass_order = []
     
-    def register(self, pass_func: Callable, name: str = None, description: str = ""):
+    def register(self, pass_func: Callable, name: str = None, description: str = None):
         """
         Register a pass function.
         
@@ -33,8 +34,10 @@ class PassRegistry:
             name: Optional name for the pass (if not provided, will use function name without 'pass_' prefix)
             description: Optional description (if not provided, will use function's docstring)
         """
-        self._registry[name] = PassInfo(pass_func, name, description)
-        self._pass_order.append(name)
+        pass_info = PassInfo(pass_func, name, description)
+        # must use name from pass_info.name, which might be a generated name
+        self._registry[pass_info.name] = pass_info
+        self._pass_order.append(pass_info.name)
     
     def get(self, name: str) -> PassInfo:
         """Get a pass by name."""

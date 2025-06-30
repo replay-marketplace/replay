@@ -82,10 +82,16 @@ class EpicIR():
         """
         Convert the EpicIR to a dictionary representation for JSON serialization.
         """
+        # Make a copy of the graph with opcodes as strings
+        graph_copy = self.graph.copy()
+        for node in graph_copy.nodes:
+            opcode = graph_copy.nodes[node].get('opcode')
+            if isinstance(opcode, Opcode):
+                graph_copy.nodes[node]['opcode'] = opcode.value
         return {
             'first_node': self.first_node,
             'node_counter': self.node_counter,
-            'graph': nx.node_link_data(self.graph)
+            'graph': nx.node_link_data(graph_copy)
         }
     
     @classmethod
@@ -97,7 +103,16 @@ class EpicIR():
         instance.first_node = data.get('first_node')
         instance.node_counter = data.get('node_counter', 0)
         if 'graph' in data:
-            instance.graph = nx.node_link_graph(data['graph'])
+            graph = nx.node_link_graph(data['graph'])
+            # Restore opcodes as enums
+            for node in graph.nodes:
+                opcode = graph.nodes[node].get('opcode')
+                if isinstance(opcode, str):
+                    try:
+                        graph.nodes[node]['opcode'] = Opcode(opcode)
+                    except ValueError:
+                        pass  # Leave as string if not a valid Opcode
+            instance.graph = graph
         return instance
 
 

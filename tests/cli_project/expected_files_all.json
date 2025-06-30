@@ -7,7 +7,22 @@
         "test_project/1/replay/replay_state.json",
         "test_project/1/replay/epic.txt",
         "test_project/1/replay/epic.png",
+        "test_project/1/replay/epic.json",
         "test_project/1/replay/prompt.txt",
-        "test_project/replay/replay_counter.txt"
+        "test_project/1/replay/passes/pass0_initial_graph.json",
+        "test_project/1/replay/passes/pass0_initial_graph.png",
+        "test_project/1/replay/passes/pass0_initial_graph.txt",
+        "test_project/1/replay/passes/pass1_insert_exit_node.json",
+        "test_project/1/replay/passes/pass1_insert_exit_node.png",
+        "test_project/1/replay/passes/pass1_insert_exit_node.txt",
+        "test_project/1/replay/passes/pass2_lower_debug_loop.json",
+        "test_project/1/replay/passes/pass2_lower_debug_loop.png",
+        "test_project/1/replay/passes/pass2_lower_debug_loop.txt",
+        "test_project/1/replay/passes/pass3_lower_prompt_file_refs.json",
+        "test_project/1/replay/passes/pass3_lower_prompt_file_refs.png",
+        "test_project/1/replay/passes/pass3_lower_prompt_file_refs.txt",
+        "test_project/1/replay/passes/pass4_process_ro_markers.json",
+        "test_project/1/replay/passes/pass4_process_ro_markers.png",
+        "test_project/1/replay/passes/pass4_process_ro_markers.txt"
     ]
 }
