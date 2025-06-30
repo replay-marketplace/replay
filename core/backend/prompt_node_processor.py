@@ -18,11 +18,11 @@ class PromptNodeProcessor:
         contents = epic.graph.nodes[node]['contents']
         logger.debug(f"Processing prompt: {contents}")
         prompt = self._build_prompt_from_contents(contents, replay_dir)
-        code_to_edit_paths = [os.path.join(code_dir, ref) for ref in contents.get('code_refs', [])]
+        code_to_edit_paths = contents.get('code_refs', [])
         llm_json = {
             'prompt': prompt,
             'code_to_edit': self._serialize_files_and_dirs(code_dir, code_to_edit_paths),
-            'read_only_files': self._serialize_read_only_files(epic, node, contents, project_dir),
+            'read_only_files': self._serialize_read_only_files(epic, node, contents, replay.version_dir),
             'commands_to_run': []
         }
         llm_json_str = json.dumps(llm_json, indent=4)
@@ -82,62 +82,33 @@ class PromptNodeProcessor:
                             logger.error(f"Error reading file {file_path}: {str(e)}")
         return result
 
-    def _serialize_read_only_files(self, epic, node, contents, project_dir):
+    def _serialize_read_only_files(self, epic, node, contents, version_dir):
         read_only_files = []
-        session_dir = os.path.dirname(project_dir) if project_dir.endswith('latest') else project_dir
         
-        # Handle docs references - files come from the docs directory
-        docs_refs = contents.get('docs_refs', [])
-        if docs_refs:
-            docs_dir = os.path.join(session_dir, "docs")
-            for ref in docs_refs:
-                file_path = os.path.join(docs_dir, ref)
-                if os.path.exists(file_path):
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            contents_text = f.read()
-                        read_only_files.append({
-                            "path_and_filename": ref,
-                            "contents": contents_text
-                        })
-                        logger.debug(f"Added readonly docs file: {ref}")
-                    except Exception as e:
-                        logger.error(f"Error reading docs file {file_path}: {str(e)}")
+        # Define the directory mappings for different reference types
+        dir_mappings = {
+            'docs_refs': 'docs',
+            'template_refs': 'template', 
+            'code_refs': 'code'
+        }
         
-        # Handle template references - files come from the template directory
-        template_refs = contents.get('template_refs', [])
-        if template_refs:
-            template_dir = os.path.join(session_dir, "template")
-            for ref in template_refs:
-                file_path = os.path.join(template_dir, ref)
-                if os.path.exists(file_path):
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            contents_text = f.read()
-                        read_only_files.append({
-                            "path_and_filename": ref,
-                            "contents": contents_text
-                        })
-                        logger.debug(f"Added readonly template file: {ref}")
-                    except Exception as e:
-                        logger.error(f"Error reading template file {file_path}: {str(e)}")
-        
-        # Handle code references - files come from the code directory
-        code_refs = contents.get('code_refs', [])
-        if code_refs:
-            code_dir = os.path.join(session_dir, "code")
-            for ref in code_refs:
-                file_path = os.path.join(code_dir, ref)
-                if os.path.exists(file_path):
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            contents_text = f.read()
-                        read_only_files.append({
-                            "path_and_filename": ref,
-                            "contents": contents_text
-                        })
-                        logger.debug(f"Added readonly code file: {ref}")
-                    except Exception as e:
-                        logger.error(f"Error reading code file {file_path}: {str(e)}")
+        # Process each type of reference
+        for ref_type, dir_name in dir_mappings.items():
+            refs = contents.get(ref_type, [])
+            if refs:
+                source_dir = os.path.join(version_dir, dir_name)
+                for ref in refs:
+                    file_path = os.path.join(source_dir, ref)
+                    if os.path.exists(file_path):
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                contents_text = f.read()
+                            read_only_files.append({
+                                "path_and_filename": ref,
+                                "contents": contents_text
+                            })
+                            logger.debug(f"Added readonly {ref_type} file: {ref}")
+                        except Exception as e:
+                            logger.error(f"Error reading {ref_type} file {file_path}: {str(e)}")
         
         return read_only_files 

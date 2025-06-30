@@ -35,7 +35,7 @@ class MockAnthropicClient:
                     for code_to_edit in code_to_edit:
                         response_json["files"].append({
                             "path_and_filename": code_to_edit["path_and_filename"],
-                            "contents": code_to_edit["contents"]
+                            "contents": f'# Modified by LLM: {code_to_edit["contents"]}'
                         })
 
                     self.content = [DummyContent(json.dumps(response_json))]

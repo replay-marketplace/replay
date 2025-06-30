@@ -56,7 +56,6 @@ def main():
         )
         runner = Replay.from_recipe(input_config, use_mock=args.mock)
         if args.setup_only:
-            runner.setup()
             runner.compile()
             runner.save_state()
         else:

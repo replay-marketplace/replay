@@ -97,11 +97,15 @@ class Replay:
         self.template_dir = None
         self.latest_dir = os.path.join(self.project_dir, "latest")
         self.system_instructions = None
-        self.node_processor_registry = NodeProcessorRegistry.create_registry()
+        self.node_processor_registry = NodeProcessorRegistry.create_registry()        
+            
         self._setup_directories()
-        if self.state.status != ReplayStatus.UNINITIALIZED:
-            self._init_client()
-            self._load_system_instructions()
+        self._init_client()
+        self._load_system_instructions()        
+
+        if self.state.status in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
+            self.status = ReplayStatus.INITIALIZED
+
 
     @classmethod
     def from_recipe(
@@ -161,20 +165,8 @@ class Replay:
             logger.info(f"Replay status: {old_status.value} → {new_status.value}")
             self.state.status = new_status
 
-    def setup(self, clear_terminal: bool = False):
-        if self.state.status != ReplayStatus.UNINITIALIZED:
-            return
-        if clear_terminal:
-            os.system('cls' if os.name == 'nt' else 'clear')
-        self._init_client()
-        self._setup_directories()
-        self._load_system_instructions()
-        self.status = ReplayStatus.INITIALIZED
-
     def run_step(self):
-        if self.state.status == ReplayStatus.UNINITIALIZED:
-            self.setup()
-        if self.state.status == ReplayStatus.COMPILING_PROGRAM:
+        if self.state.status == ReplayStatus.INITIALIZED:
             self.compile()
         if self.state.status == ReplayStatus.LOADED_PROGRAM:
             self.status = ReplayStatus.RUNNING_PROGRAM
@@ -195,8 +187,8 @@ class Replay:
             post_replay_dir_cleanup(self.project_dir, self.latest_dir, self.version_dir)
 
     def run_all(self):
-        self.setup()
-        self.compile()
+        if self.state.status == ReplayStatus.INITIALIZED:
+            self.compile()        
         while self.has_steps():
             self.run_step()
 
@@ -293,9 +285,7 @@ class Replay:
 
         logger.info("Reference content copy complete.")
 
-    def compile(self):        
-        if self.state.status != ReplayStatus.INITIALIZED:
-            self.setup()
+    def compile(self):
         self.status = ReplayStatus.COMPILING_PROGRAM
         self.state.execution.epic = prompt_preprocess3(self.state.input_config.input_prompt_file, self.replay_dir)
         self.state.execution.dfs_nodes = list(nx.dfs_preorder_nodes(self.state.execution.epic.graph, self.state.execution.epic.first_node))
