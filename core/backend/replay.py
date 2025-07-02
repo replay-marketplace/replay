@@ -29,25 +29,28 @@ class InputConfig:
 @dataclass
 class ExecutionState:
     """Contains the runtime execution state (like CPU state with loaded program)"""
-    current_node_idx: int = 0
+    current_node_id: Optional[str] = None
+    control_flow_graph_queue: List[Optional[str]] = field(default_factory=list)
     epic: Optional[EpicIR] = None  # The loaded program
-    dfs_nodes: List[Any] = field(default_factory=list)  # Execution order
     
     def to_dict(self) -> dict:
         return {
-            "current_node_idx": self.current_node_idx,
+            "current_node_id": self.current_node_id,
+            "control_flow_graph_queue": self.control_flow_graph_queue,
             "epic": self.epic.to_dict() if self.epic else None,
-            "dfs_nodes": self.dfs_nodes,
         }
     
     @classmethod
-    def from_dict(cls, d: dict):
+    def from_dict(cls, d: dict):        
         epic_data = d.get("epic")
         epic = EpicIR.from_dict(epic_data) if epic_data else None
+        current_node_id = d.get("current_node_id", None)
+        control_flow_graph_queue = d.get("control_flow_graph_queue", [])
+
         return cls(
-            current_node_idx=d.get("current_node_idx", 0),
+            current_node_id=current_node_id,
+            control_flow_graph_queue=control_flow_graph_queue,
             epic=epic,
-            dfs_nodes=d.get("dfs_nodes", []),
         )
 
 @dataclass
@@ -97,7 +100,7 @@ class Replay:
         self.template_dir = None
         self.latest_dir = os.path.join(self.project_dir, "latest")
         self.system_instructions = None
-        self.node_processor_registry = NodeProcessorRegistry.create_registry()        
+        self.node_processor_registry = NodeProcessorRegistry.create_registry()
             
         self._setup_directories()
         self._init_client()
@@ -146,6 +149,7 @@ class Replay:
         with open(state_path, 'r') as f:
             loaded_state = ReplayState.from_dict(json.load(f))
             logger.info(f"State loaded from {state_path}")
+            
             return cls(loaded_state, client=client, use_mock=use_mock)
 
     @staticmethod
@@ -168,29 +172,50 @@ class Replay:
             self.state.status = new_status
 
     def run_step(self):
+        if self.state.status == ReplayStatus.FINISHED_RUNNING_PROGRAM:
+            return
+        
         if self.state.status == ReplayStatus.INITIALIZED:
             self.compile()
         if self.state.status == ReplayStatus.LOADED_PROGRAM:
             self.status = ReplayStatus.RUNNING_PROGRAM
-        if not self.has_steps():
+        if self.state.status == ReplayStatus.RUNNING_PROGRAM and not self.has_steps():
             return
-            
-        node = self.state.execution.dfs_nodes[self.state.execution.current_node_idx]
-        opcode = self.state.execution.epic.graph.nodes[node]['opcode']
+        
+        assert self.state.execution.current_node_id is not None, "Current node can't be None here"
+        
+        current_node_id = self.state.execution.current_node_id
+        if current_node_id is None:
+            logger.warning("No steps to run")
+            return
+        current_node = self.state.execution.epic.graph.nodes[current_node_id]
+        if current_node is None:
+            logger.warning(f"Current node not found: {current_node_id}")
+            return
+        
+        opcode = current_node['opcode']
         processor = self.node_processor_registry.get(opcode)
         if processor is None:
             raise ValueError(f"No processor registered for opcode: {opcode}")
         logger.debug(f"\n\n--- RUNTIME: start {opcode.name.lower()}: ---- ")
-        processor.process(self, node)
+        processor.process(self, current_node)
         logger.debug(f"--- {opcode.name.lower()}: END ----")
-        self.state.execution.current_node_idx += 1
-        if self.state.execution.current_node_idx >= len(self.state.execution.dfs_nodes):
+        
+        # Determine next node using CFG traversal
+        from core.prompt_preprocess2.ir.ir import cfg_traversal_step        
+        cfg_queue, next_node_id = cfg_traversal_step(self.state.execution.epic, self.state.execution.control_flow_graph_queue)
+        self.state.execution.control_flow_graph_queue = cfg_queue
+        self.state.execution.current_node_id = next_node_id
+
+        if len(self.state.execution.control_flow_graph_queue) == 0:
+            self.state.execution.current_node_id = None
             self.status = ReplayStatus.FINISHED_RUNNING_PROGRAM
             post_replay_dir_cleanup(self.project_dir, self.latest_dir, self.version_dir)
 
     def run_all(self):
         if self.state.status == ReplayStatus.INITIALIZED:
-            self.compile()        
+            self.compile()
+
         while self.has_steps():
             self.run_step()
 
@@ -343,9 +368,10 @@ class Replay:
 
     def compile(self):
         self.status = ReplayStatus.COMPILING_PROGRAM
-        self.state.execution.epic = prompt_preprocess3(self.state.input_config.input_prompt_file, self.replay_dir)
-        self.state.execution.dfs_nodes = list(nx.dfs_preorder_nodes(self.state.execution.epic.graph, self.state.execution.epic.first_node))
-        self.state.execution.current_node_idx = 0
+        self.state.execution.epic = prompt_preprocess3(self.state.input_config.input_prompt_file, self.replay_dir)        
+        self.state.execution.control_flow_graph_queue = [self.state.execution.epic.first_node]
+        self.state.execution.current_node_id = self.state.execution.epic.first_node
+        
         # Print the parsed graph for debugging
         print("\n=== Parsed Graph Nodes ===")
         for node in self.state.execution.epic.graph.nodes(data=True):
@@ -356,8 +382,7 @@ class Replay:
         self.status = ReplayStatus.LOADED_PROGRAM
 
     def has_steps(self):
-        return (self.state.execution.current_node_idx < len(self.state.execution.dfs_nodes) and 
-                self.state.status != ReplayStatus.FINISHED_RUNNING_PROGRAM)
+        return (self.state.execution.current_node_id is not None)
 
     def _init_client(self):
         """
@@ -388,6 +413,20 @@ class Replay:
         except FileNotFoundError:
             raise RuntimeError("System instructions file not found in session replay folder.")
 
+    def _copy_system_instructions(self):
+        src_instructions_dir = "core/backend"
+        src_instructions = ["client_instructions_with_json.txt",
+                            "client_instructions_indentify_issue.txt"]
+        dst_instructions = os.path.join(self.replay_dir)        
+        for src_instruction in src_instructions:
+            src_instruction_path = os.path.join(src_instructions_dir, src_instruction)
+            dst_instruction = os.path.join(self.replay_dir, src_instruction)
+            if os.path.exists(src_instruction_path):
+                import shutil
+                shutil.copy(src_instruction_path, dst_instruction)
+            else:
+                raise RuntimeError(f"System instructions file not found in {src_instruction_path}")
+
     def _setup_directories(self):
         # Set up all relevant directories for this version
         version = self.state.version or "1"
@@ -395,19 +434,16 @@ class Replay:
         self.replay_dir = os.path.join(self.version_dir, "replay")
         self.code_dir = os.path.join(self.version_dir, "code")
         self.docs_dir = os.path.join(self.replay_dir, "docs")
+        self.run_logs_dir = os.path.join(self.replay_dir, "run_logs")
         self.template_dir = os.path.join(self.replay_dir, "template")
         os.makedirs(self.replay_dir, exist_ok=True)
         os.makedirs(self.code_dir, exist_ok=True)
         os.makedirs(self.docs_dir, exist_ok=True)
+        os.makedirs(self.run_logs_dir, exist_ok=True)
         os.makedirs(self.template_dir, exist_ok=True)
-        # Copy system instructions (before touching symlink)
-        src_instructions = "core/backend/client_instructions_with_json.txt"
-        dst_instructions = os.path.join(self.replay_dir, "client_instructions_with_json.txt")
-        if os.path.exists(src_instructions):
-            import shutil
-            shutil.copy(src_instructions, dst_instructions)
-        else:
-            raise RuntimeError("System instructions file not found in core/backend/")
+        
+        self._copy_system_instructions()
+        
         # Only update latest symlink if this is actually the latest version
         # Check if this version is actually the latest
         versions = [int(d) for d in os.listdir(self.project_dir) if d.isdigit()]
@@ -417,4 +453,6 @@ class Replay:
             elif os.path.isdir(self.latest_dir):
                 import shutil
                 shutil.rmtree(self.latest_dir)
-            os.symlink(self.version_dir, self.latest_dir)
+            # Use relative path for the symlink
+            version_name = os.path.basename(self.version_dir)
+            os.symlink(version_name, self.latest_dir)

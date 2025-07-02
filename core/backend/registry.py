@@ -3,6 +3,7 @@ from .prompt_node_processor import PromptNodeProcessor
 from .run_node_processor import RunNodeProcessor
 from .exit_node_processor import ExitNodeProcessor
 from .doc_node_processor import DocNodeProcessor
+from .conditional_node_processor import ConditionalNodeProcessor
 from core.prompt_preprocess2.ir.ir import Opcode
 
 class NodeProcessorRegistry:
@@ -21,4 +22,5 @@ class NodeProcessorRegistry:
         registry.register(Opcode.RUN, RunNodeProcessor())
         registry.register(Opcode.EXIT, ExitNodeProcessor())
         registry.register(Opcode.DOCS, DocNodeProcessor())
+        registry.register(Opcode.CONDITIONAL, ConditionalNodeProcessor())
         return registry

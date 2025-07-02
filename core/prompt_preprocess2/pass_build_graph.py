@@ -8,14 +8,14 @@ from .ir.ir import Opcode, FE_MARKERS, INTRA_NODE_MARKERS
 from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, EpicIR
 from .parse_prompt import parse_ir_markers
 
-def build_default_run_node(epic: EpicIR) -> str:
-    new_node = epic.add_node(opcode=Opcode.RUN, 
-                             contents={"command_to_run": "./run_tests.sh 2>&1 | tee ../replay/run_tests_terminal_output.txt",
-                                       "passed": "false",
-                                       "if_condition_file": "../replay/run_tests_pass_fail.txt",
-                                       "terminal_output_file": "../replay/run_tests_terminal_output.txt"
-                                    })
-    return new_node
+
+# parse @command:"cli command with args to be run"
+def parse_command(extracted_config: str) -> str:    
+    # find @command:
+    command_to_run = extracted_config.split("@command:")[1]
+    # remove quotes in the start and end if present
+    command_to_run = command_to_run.strip('"')
+    return command_to_run
 
 def add_simple_edge(epic: EpicIR, previous_node: str, new_node: str):
     if previous_node is not None:
@@ -53,11 +53,11 @@ def pass_build_epic_graph(epic: EpicIR, input_file: str = None) -> EpicIR:
             previous_node = add_simple_edge(epic, previous_node, new_node) 
        
         elif ir_marker_first_word == "/RUN":
-            new_node = build_default_run_node(epic)
+            new_node = epic.add_node(opcode=Opcode.RUN, contents={"command": parse_command(ir_marker_without_first_word)})
             previous_node = add_simple_edge(epic, previous_node, new_node)
 
         elif ir_marker_first_word == "/DEBUG_LOOP":
-            new_node = epic.add_node(opcode=Opcode.DEBUG_LOOP, contents={})
+            new_node = epic.add_node(opcode=Opcode.DEBUG_LOOP, contents={"command": parse_command(ir_marker_without_first_word)})
             previous_node = add_simple_edge(epic, previous_node, new_node)
 
         elif ir_marker_first_word == "/EXIT":

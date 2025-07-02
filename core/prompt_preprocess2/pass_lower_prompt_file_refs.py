@@ -11,7 +11,8 @@ def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
     patterns = {
         'docs': re.compile(r'@docs:([^\s]+)'),
         'template': re.compile(r'@template:([^\s]+)'),
-        'code': re.compile(r'@code:([^\s]+)')
+        'code': re.compile(r'@code:([^\s]+)'),
+        'run_logs': re.compile(r'@run_logs:([^\s]+)')
     }
 
     # Find all PROMPT nodes

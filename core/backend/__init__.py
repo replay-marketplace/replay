@@ -2,4 +2,5 @@ from .template_node_processor import TemplateNodeProcessor
 from .prompt_node_processor import PromptNodeProcessor
 from .run_node_processor import RunNodeProcessor
 from .exit_node_processor import ExitNodeProcessor
+from .conditional_node_processor import ConditionalNodeProcessor
 from .registry import NodeProcessorRegistry 

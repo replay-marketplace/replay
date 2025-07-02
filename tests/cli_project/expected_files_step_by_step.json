@@ -3,10 +3,11 @@
         {
             "step_number": 1,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
@@ -32,10 +33,11 @@
         {
             "step_number": 2,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
@@ -61,10 +63,11 @@
         {
             "step_number": 3,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
@@ -90,10 +93,11 @@
         {
             "step_number": 4,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
@@ -119,10 +123,11 @@
         {
             "step_number": 5,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
@@ -148,10 +153,11 @@
         {
             "step_number": 6,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
@@ -177,10 +183,11 @@
         {
             "step_number": 7,
             "files": [
-                "test_project_step_by_step/1/replay/docs/doc1.md",
-                "test_project_step_by_step/1/replay/template/template1.py",
+                "test_project_step_by_step/1/replay/docs/docs/doc1.md",
+                "test_project_step_by_step/1/replay/template/template/template1.py",
                 "test_project_step_by_step/1/code/template1.py",
                 "test_project_step_by_step/1/replay/client_instructions_with_json.txt",
+                "test_project_step_by_step/1/replay/client_instructions_indentify_issue.txt",
                 "test_project_step_by_step/1/replay/replay_state.json",
                 "test_project_step_by_step/1/replay/epic.txt",
                 "test_project_step_by_step/1/replay/epic.png",
