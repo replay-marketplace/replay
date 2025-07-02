@@ -1,7 +1,0 @@
-Single line prompt
-\PROMPT
-Another single line prompt
-\PROMPT
-This is a longer prompt
-with multiple lines
-and some special characters: !@#$%^&*() 

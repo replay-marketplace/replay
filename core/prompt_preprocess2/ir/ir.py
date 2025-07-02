@@ -15,6 +15,7 @@ class Opcode(Enum):
     TEMPLATE    = "TEMPLATE"        # 1
     PROMPT      = "PROMPT"          # 2
     READ_ONLY   = "READ_ONLY"       # 3
+    DOCS        = "DOCS"            # 4
     RUN         = "RUN"             # 6
     DEBUG_LOOP  = "DEBUG_LOOP"      # 5
     CONDITIONAL = "CONDITIONAL"     # 7
@@ -29,6 +30,7 @@ OPCODE_COLORS = {
     Opcode.TEMPLATE: 'red',
     Opcode.PROMPT: 'blue',
     Opcode.READ_ONLY: 'green',
+    Opcode.DOCS: 'cyan',
     Opcode.RUN: 'purple',
     Opcode.DEBUG_LOOP: 'yellow',
     Opcode.COMMAND: 'red',
@@ -41,6 +43,7 @@ OPCODE_COLORS = {
 # ToDo: rensme to FE_MARKERS
 FE_MARKERS = [    "/TEMPLATE",      # 1
                   "/PROMPT",        # 2
+                  "/DOCS",          # 4
                   "/RUN",           # 4
                   "/DEBUG_LOOP", 
                   "/EXIT"]    # 3 Lowered into a conditional loop 
@@ -74,6 +77,43 @@ class EpicIR():
         if self.first_node is None:
             self.first_node = node_name
         return node_name
+
+    def to_dict(self) -> dict:
+        """
+        Convert the EpicIR to a dictionary representation for JSON serialization.
+        """
+        # Make a copy of the graph with opcodes as strings
+        graph_copy = self.graph.copy()
+        for node in graph_copy.nodes:
+            opcode = graph_copy.nodes[node].get('opcode')
+            if isinstance(opcode, Opcode):
+                graph_copy.nodes[node]['opcode'] = opcode.value
+        return {
+            'first_node': self.first_node,
+            'node_counter': self.node_counter,
+            'graph': nx.node_link_data(graph_copy)
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'EpicIR':
+        """
+        Create an EpicIR instance from a dictionary representation.
+        """
+        instance = cls()
+        instance.first_node = data.get('first_node')
+        instance.node_counter = data.get('node_counter', 0)
+        if 'graph' in data:
+            graph = nx.node_link_graph(data['graph'])
+            # Restore opcodes as enums
+            for node in graph.nodes:
+                opcode = graph.nodes[node].get('opcode')
+                if isinstance(opcode, str):
+                    try:
+                        graph.nodes[node]['opcode'] = Opcode(opcode)
+                    except ValueError:
+                        pass  # Leave as string if not a valid Opcode
+            instance.graph = graph
+        return instance
 
 
 

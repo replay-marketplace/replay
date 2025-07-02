@@ -1,4 +1,3 @@
-
 import shutil
 import json
 import networkx as nx
@@ -9,12 +8,12 @@ from .ir.ir import Opcode, FE_MARKERS, INTRA_NODE_MARKERS
 from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, EpicIR
 from .parse_prompt import text_to_list2,parse_ir_markers
 
-def bfs_nodes(epic: EpicIR) -> EpicIR:
+def bfs_nodes(epic: EpicIR) -> List[str]:
     """
     Get nodes in breadth-first search order using NetworkX's built-in BFS.
     
     Args:
-        graph: The directed graph to traverse
+        epic: The EpicIR graph to traverse
         
     Returns:
         List of node names in BFS order
@@ -29,6 +28,7 @@ def bfs_nodes(epic: EpicIR) -> EpicIR:
     return list(nx.bfs_tree(epic.graph, start_node).nodes())
 
 def pass_insert_exit_node(epic: EpicIR) -> EpicIR:
+    """Add EXIT node at the end if not already present."""
     print("\n\nPASS: Insert Exit Node")
     
     # Make a node list based on Breadth First Search

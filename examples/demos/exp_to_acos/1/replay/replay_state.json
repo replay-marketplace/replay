@@ -1,0 +1,75 @@
+{
+  "input_config": {
+    "input_prompt_file": "/home/ubuntu/replay/examples/prompts/create_new_op_from_generic.txt",
+    "project_name": "exp_to_acos",
+    "output_dir": "/home/ubuntu/replay/examples/demos"
+  },
+  "execution": {
+    "current_node_idx": 4,
+    "epic": {
+      "first_node": "template_1",
+      "node_counter": 5,
+      "graph": {
+        "directed": true,
+        "multigraph": false,
+        "graph": {},
+        "nodes": [
+          {
+            "opcode": "TEMPLATE",
+            "contents": {
+              "path": "templates/ttnn/newop_generic"
+            },
+            "id": "template_1"
+          },
+          {
+            "opcode": "DOCS",
+            "contents": {
+              "path": "docs"
+            },
+            "id": "docs_2"
+          },
+          {
+            "opcode": "PROMPT",
+            "contents": {
+              "prompt": "Update @code:tt_eltwise_sfpu.cpp to implement acos operation instead of exp Update @code:test_newop.py to compare against ttnn.acos instead of exp ``` #### acos_tile void ckernel::acos_tile_init() Most compute API calls have an *_init paired API call (for example exp_tile_init and exp_tile). Invoking this *_init API configures the compute unit for execution of the subsequent paired call. void ckernel::acos_tile(uint32_t idst) Performs element-wise computation of arccossine on each element of a tile in DST register at index tile_index. The DST register buffer must be in acquired state via _acquire_dst_ call. This call is blocking and is only available on the compute engine. Return value: None Argument | Description | Type | Valid Range | Required ---|---|---|---|--- idst | The index of the tile in DST register buffer to perform the computation on | uint32_t | Must be less than the size of the DST register buffer | True ``` To use acos_tile you need compute_kernel_api.h include",
+              "docs_refs": [],
+              "template_refs": [],
+              "code_refs": [
+                "tt_eltwise_sfpu.cpp",
+                "test_newop.py"
+              ]
+            },
+            "id": "prompt_3"
+          },
+          {
+            "opcode": "EXIT",
+            "contents": {},
+            "id": "exit_node_4"
+          }
+        ],
+        "links": [
+          {
+            "source": "template_1",
+            "target": "docs_2"
+          },
+          {
+            "source": "docs_2",
+            "target": "prompt_3"
+          },
+          {
+            "source": "prompt_3",
+            "target": "exit_node_4"
+          }
+        ]
+      }
+    },
+    "dfs_nodes": [
+      "template_1",
+      "docs_2",
+      "prompt_3",
+      "exit_node_4"
+    ]
+  },
+  "status": "finished_running_program",
+  "version": "1"
+}

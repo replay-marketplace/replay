@@ -1,0 +1,13 @@
+/TEMPLATE template
+/RO docs
+
+/PROMPT
+Only a ref to doc 1 @docs:doc1.md
+
+/PROMPT
+This is prompt has no refs
+
+/PROMPT 
+This is prompt 2 @docs:doc2.md
+And we can reference a template @template:template_file1.py
+Or something within code dir @code:some_folder/inner_template_file.py
