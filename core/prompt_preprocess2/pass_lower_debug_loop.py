@@ -4,9 +4,6 @@ from typing import List
 
 from .ir.ir import EpicIR, Opcode
 
-<<<<<<< Updated upstream
-
-=======
 def get_run_exit_code(run_node) -> str:
     """
     Get the file path for the command exit code.
@@ -34,7 +31,6 @@ def get_run_log(run_node, type: str) -> str:
 #   The second prompt in the fix-it chain runs a command to fix the issue.
 #   After this we go back to run the original command and repeat the process 
 #   till we fix the issue or hit the iteration limit.
->>>>>>> Stashed changes
 def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
     print("\n\nPASS: Lower Debug Loop")
 

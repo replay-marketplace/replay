@@ -31,18 +31,6 @@ class Opcode(Enum):
 
 
 OPCODE_COLORS = {
-<<<<<<< Updated upstream
-    Opcode.TEMPLATE: 'red',
-    Opcode.PROMPT: 'blue',
-    Opcode.READ_ONLY: 'green',
-    Opcode.DOCS: 'cyan',
-    Opcode.RUN: 'purple',
-    Opcode.DEBUG_LOOP: 'yellow',
-    Opcode.COMMAND: 'red',
-    Opcode.CONDITIONAL: 'orange',
-    Opcode.EXIT: 'brown'
-    }
-=======
     Opcode.TEMPLATE:   '#FFB3BA',  # soft pink
     Opcode.PROMPT:     '#BAE1FF',  # soft blue
     Opcode.READ_ONLY:  '#BFFCC6',  # soft green
@@ -53,26 +41,15 @@ OPCODE_COLORS = {
     Opcode.CONDITIONAL:'#FFE0F6',  # soft magenta
     Opcode.EXIT:       '#CCCCCC',  # soft gray
 }
->>>>>>> Stashed changes
-
 
 # Front End parser: parse User input prompt.txt file markers
 # ToDo: rensme to FE_MARKERS
-<<<<<<< Updated upstream
-FE_MARKERS = [    "/TEMPLATE",      # 1
-                  "/PROMPT",        # 2
-                  "/DOCS",          # 4
-                  "/RUN",           # 4
-                  "/DEBUG_LOOP", 
-                  "/EXIT"]    # 3 Lowered into a conditional loop 
-=======
 FE_MARKERS = [    "/TEMPLATE",      # 1 Specify dir with files to seed code folder
                   "/PROMPT",        # 2 Specify LLM call
                   "/DOCS",          # 3 Specify dir with read only docs
                   "/RUN",           # 4 Specify CLI call
                   "/DEBUG_LOOP",    # 5 Lowered into a conditional loop 
                   "/EXIT"]          # 6 
->>>>>>> Stashed changes
 
 # Markers within a node after the IR_MARKER parsing, that trigger second order effects
 INTRA_NODE_MARKERS = ["/RO"]
