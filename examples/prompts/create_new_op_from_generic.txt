@@ -28,4 +28,6 @@ Argument  | Description  | Type  | Valid Range  | Required
 idst  | The index of the tile in DST register buffer to perform the computation on  | uint32_t  | Must be less than the size of the DST register buffer  | True 
 
 ```
-Use #include "compute_kernel_api.h" for the acos_tile function.
+To use acos_tile include "compute_kernel_api.h"
+
+/DEBUG_LOOP @command:"python3 test_newop.py"

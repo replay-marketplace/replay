@@ -4,18 +4,16 @@ import networkx as nx
 import logging
 from typing import List
 
-from .ir.ir import Opcode, FE_MARKERS, INTRA_NODE_MARKERS
-from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, EpicIR
-from .parse_prompt import parse_ir_markers
+from .ir.markers import FE_MARKERS
+from .ir.ir import Opcode, EpicIR
 
-def build_default_run_node(epic: EpicIR) -> str:
-    new_node = epic.add_node(opcode=Opcode.RUN, 
-                             contents={"command_to_run": "./run_tests.sh 2>&1 | tee ../replay/run_tests_terminal_output.txt",
-                                       "passed": "false",
-                                       "if_condition_file": "../replay/run_tests_pass_fail.txt",
-                                       "terminal_output_file": "../replay/run_tests_terminal_output.txt"
-                                    })
-    return new_node
+# parse @command:"cli command with args to be run"
+def parse_command(extracted_config: str) -> str:    
+    # find @command:
+    command_to_run = extracted_config.split("@command:")[1]
+    # remove quotes in the start and end if present
+    command_to_run = command_to_run.strip('"').strip(" ")
+    return command_to_run
 
 def add_simple_edge(epic: EpicIR, previous_node: str, new_node: str):
     if previous_node is not None:
@@ -28,7 +26,6 @@ def pass_build_epic_graph(epic: EpicIR, input_file: str = None) -> EpicIR:
     if input_file is None:
         raise ValueError("input_file is required for build_graph pass")
     
-    print("\n\nPASS: Build Epic Graph:")
     ir_marker_list = parse_ir_markers(input_file)
     #print("\n\nir_marker_list:")
     #print(ir_marker_list)
@@ -53,11 +50,11 @@ def pass_build_epic_graph(epic: EpicIR, input_file: str = None) -> EpicIR:
             previous_node = add_simple_edge(epic, previous_node, new_node) 
        
         elif ir_marker_first_word == "/RUN":
-            new_node = build_default_run_node(epic)
+            new_node = epic.add_node(opcode=Opcode.RUN, contents={"command": parse_command(ir_marker_without_first_word)})
             previous_node = add_simple_edge(epic, previous_node, new_node)
 
         elif ir_marker_first_word == "/DEBUG_LOOP":
-            new_node = epic.add_node(opcode=Opcode.DEBUG_LOOP, contents={})
+            new_node = epic.add_node(opcode=Opcode.DEBUG_LOOP, contents={"command": parse_command(ir_marker_without_first_word)})
             previous_node = add_simple_edge(epic, previous_node, new_node)
 
         elif ir_marker_first_word == "/EXIT":
@@ -66,8 +63,46 @@ def pass_build_epic_graph(epic: EpicIR, input_file: str = None) -> EpicIR:
 
     return epic
 
-# Legacy function for backward compatibility
-def pass_build_epic_graph_legacy(input_file: str) -> EpicIR:
-    """Legacy function that creates a new EpicIR and calls the pass."""
-    epic = EpicIR()
-    return pass_build_epic_graph(epic, input_file)
+def parse_ir_markers(input_file: str) -> List[str]:
+    """
+    Parse a text file containing markers (/TEMPLATE, /PROMPT, /TEST_LOOP) and create a List of strings with the parsed sections.
+    Each section should be the text that comes after any of the markers, and until the next marker is found.
+    If there are no markers, return an empty list.
+    Don't include the text before the first marker.
+    Marker should be included in the list. 
+    
+    Args:
+        input_file (str): Path to the input text file
+    """
+    # Read the input file
+    with open(input_file, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Check if there are any markers
+    if not any(marker in content for marker in FE_MARKERS):
+        return []
+    
+    # Find all positions of markers in the content
+    marker_positions = []
+    for marker in FE_MARKERS:
+        pos = 0
+        while True:
+            pos = content.find(marker, pos)
+            if pos == -1:
+                break
+            marker_positions.append((pos, marker))
+            pos += len(marker)
+    
+    # Sort positions to maintain order
+    marker_positions.sort()
+    
+    # Extract sections between markers
+    sections = []
+    for i in range(len(marker_positions)):
+        start_pos = marker_positions[i][0]  # Changed to include marker
+        end_pos = marker_positions[i + 1][0] if i + 1 < len(marker_positions) else len(content)
+        section = content[start_pos:end_pos].strip()
+        if section:
+            sections.append(section)
+    
+    return sections

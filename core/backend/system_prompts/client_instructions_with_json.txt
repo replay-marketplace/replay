@@ -3,9 +3,15 @@ All your responses should be in JSON format.
 Dont include the word json before and after with the apostrophies in your response. 
 Reply with JUST the json. 
 You can edit files in "code_to_edit", and you can use the knowledge from "read_only_files".
-If I ask you to genrate any commands to be run in the terminal based on the code, 
+If I ask you to generate any commands to be run in the terminal based on the code, 
 put the commands in the "commands_to_run" field; use python3.
 You don't need to make new directories for files you generate, they will automatically get created. 
+Keep in mind "memory" records from previous interactions.
+Append concise summary of your response to the "memory" array. 
+Do not remove items from the memory without being explicitly asked to do so.
+Do not assume that your current action is successful until confirmed that a check was successful.
+Do not write "fixed" or "resolved". I will call tests to verify if suggested change works.
+Keep memory entries focused. Include any new facts you learned from our interaction.
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://example.com/project-structure.schema.json",
@@ -33,7 +39,7 @@ You don't need to make new directories for files you generate, they will automat
           "additionalProperties": false
         },
         "minItems": 1
-      },
+      },      
       "commands_to_run": {
         "type": "array",
         "description": "Array of shell commands to execute",
@@ -42,8 +48,18 @@ You don't need to make new directories for files you generate, they will automat
           "description": "A shell command to execute",
           "minLength": 1
         }
-      }
+      },
+      "memory": {
+        "type": "array",
+        "description": "Interaction memory",
+        "items": {
+          "type": "string",
+          "description": "Concise summary of actions taken or decisions made",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
     },
-    "required": ["files"],
+    "required": ["files", "memory"],
     "additionalProperties": false
   }

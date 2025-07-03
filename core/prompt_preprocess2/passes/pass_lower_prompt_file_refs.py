@@ -1,17 +1,17 @@
 import networkx as nx
-from .ir.ir import Opcode, EpicIR
+from ..ir.ir import Opcode, EpicIR
 
 import re
 
 def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
     """Extract @docs:, @template:, and @code: references from prompt text."""
-    print("\n\nPASS: Lower Prompt File References")
 
     # Regex patterns for the file reference markers
     patterns = {
         'docs': re.compile(r'@docs:([^\s]+)'),
         'template': re.compile(r'@template:([^\s]+)'),
-        'code': re.compile(r'@code:([^\s]+)')
+        'code': re.compile(r'@code:([^\s]+)'),
+        'run_logs': re.compile(r'@run_logs:([^\s]+)')
     }
 
     # Find all PROMPT nodes
@@ -28,5 +28,18 @@ def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
                 print(f"Added {marker}_refs to {prompt_node}: {refs}")
         # Optionally, you could remove the marker from the prompt text here if desired
         # (not implemented)
+
+    # Parsing runs referenced into this prompt
+    # This allows to later load the run logs files into the prompt node
+    # We can't link the run logs files to the prompt node in the graph because
+    # those are dynamically created during execution and can have files from multiple runs 
+    run_ref_pattern = re.compile(r'@run_ref:([^\s]+)')
+    for prompt_node in prompt_nodes:
+        prompt_contents = epic.graph.nodes[prompt_node]['contents']
+        prompt_text = prompt_contents.get('prompt', '')
+        refs = [match.strip() for match in run_ref_pattern.findall(prompt_text)]
+        prompt_contents[f'run_refs'] = refs
+        if refs:
+            print(f"Added run_refs to {prompt_node}: {refs}")
 
     return epic 

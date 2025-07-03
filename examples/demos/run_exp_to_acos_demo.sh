@@ -31,11 +31,11 @@ mkdir -p "$OUTPUT_DIR"
 cd "$PROJECT_ROOT"
 
 echo "Starting replay execution..."
-echo "Command: python replay.py \"$PROMPT_FILE\" \"$PROJECT_NAME\" --output_dir \"$OUTPUT_DIR\""
+echo "Command: pythone replay.py \"$PROMPT_FILE\" \"$PROJECT_NAME\" --output_dir \"$OUTPUT_DIR\""
 echo ""
 
 # Run the replay
-python replay.py "$PROMPT_FILE" "$PROJECT_NAME" --output_dir "$OUTPUT_DIR"
+python3 replay.py "$PROMPT_FILE" "$PROJECT_NAME" --output_dir "$OUTPUT_DIR"
 
 echo ""
 echo "=== Demo completed ==="

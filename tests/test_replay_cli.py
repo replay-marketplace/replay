@@ -6,7 +6,10 @@ import tempfile
 import pytest
 import json
 from pathlib import Path
-from core.backend.mock_anthropic import MockAnthropicClient
+from core.backend.client.mock_anthropic import MockAnthropicClient
+
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 def assert_files_exact(output_dir, expected_files):
     # Collect all files in output_dir (relative paths), excluding client/ directory
