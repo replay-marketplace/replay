@@ -8,7 +8,8 @@ from enum import Enum
 from core.dir_preprocessing import setup_project_directories, post_replay_dir_cleanup
 from core.prompt_preprocess2.processor3 import prompt_preprocess3
 from core.prompt_preprocess2.ir.ir import EpicIR, Opcode
-from core.backend import NodeProcessorRegistry
+from core.backend.processors import NodeProcessorRegistry
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +33,14 @@ class ExecutionState:
     current_node_id: Optional[str] = None
     control_flow_graph_queue: List[Optional[str]] = field(default_factory=list)
     epic: Optional[EpicIR] = None  # The loaded program
+    memory: List[str] = field(default_factory=list)
     
     def to_dict(self) -> dict:
         return {
             "current_node_id": self.current_node_id,
             "control_flow_graph_queue": self.control_flow_graph_queue,
             "epic": self.epic.to_dict() if self.epic else None,
+            "memory": self.memory,
         }
     
     @classmethod
@@ -51,6 +54,7 @@ class ExecutionState:
             current_node_id=current_node_id,
             control_flow_graph_queue=control_flow_graph_queue,
             epic=epic,
+            memory=d.get("memory", []),
         )
 
 @dataclass
@@ -101,10 +105,10 @@ class Replay:
         self.latest_dir = os.path.join(self.project_dir, "latest")
         self.system_instructions = None
         self.node_processor_registry = NodeProcessorRegistry.create_registry()
-            
+
         self._setup_directories()
         self._init_client()
-        self._load_system_instructions()        
+        self._load_system_instructions()              
 
         if self.state.status not in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
             self.status = ReplayStatus.INITIALIZED
@@ -197,18 +201,31 @@ class Replay:
         processor = self.node_processor_registry.get(opcode)
         if processor is None:
             raise ValueError(f"No processor registered for opcode: {opcode}")
-        logger.debug(f"\n\n--- RUNTIME: start {opcode.name.lower()}: ---- ")
+        started = datetime.now()
+        logger.info(f"\n\n--- RUNTIME: start {opcode.name.lower()}: ---- ")
         processor.process(self, current_node)
-        logger.debug(f"--- {opcode.name.lower()}: END ----")
-        
-        # Determine next node using CFG traversal
-        from core.prompt_preprocess2.ir.ir import cfg_traversal_step        
-        cfg_queue, next_node_id = cfg_traversal_step(self.state.execution.epic, self.state.execution.control_flow_graph_queue)
-        self.state.execution.control_flow_graph_queue = cfg_queue
-        self.state.execution.current_node_id = next_node_id
+        ended = datetime.now()
+        duration = ended - started
 
-        if len(self.state.execution.control_flow_graph_queue) == 0:
-            self.state.execution.current_node_id = None
+        logger.info(f"--- {opcode.name.lower()}: END | Took: {duration} ----")
+
+        # Check if this is a control flow node that determines its own next node
+        if opcode == Opcode.CONDITIONAL:
+            # This is a hack to which I see 3 options:
+            # - this (I do prefer this for now)
+            # - let each node choose next node
+            # - switch to two phases
+            # For control flow nodes, let the processor set the next node
+            # The processor should have updated current_node_id appropriately
+            pass
+        else:
+            # Determine next node using CFG traversal
+            from core.prompt_preprocess2.ir.control_flow import cfg_traversal_step        
+            cfg_queue, next_node_id = cfg_traversal_step(self.state.execution.epic, self.state.execution.control_flow_graph_queue)
+            self.state.execution.control_flow_graph_queue = cfg_queue
+            self.state.execution.current_node_id = next_node_id
+
+        if len(self.state.execution.control_flow_graph_queue) and self.state.execution.current_node_id is None:            
             self.status = ReplayStatus.FINISHED_RUNNING_PROGRAM
             post_replay_dir_cleanup(self.project_dir, self.latest_dir, self.version_dir)
 
@@ -368,7 +385,7 @@ class Replay:
 
     def compile(self):
         self.status = ReplayStatus.COMPILING_PROGRAM
-        self.state.execution.epic = prompt_preprocess3(self.state.input_config.input_prompt_file, self.replay_dir)        
+        self.state.execution.epic = prompt_preprocess3(self.state.input_config.input_prompt_file, self.replay_dir, save_passes=False)        
         self.state.execution.control_flow_graph_queue = [self.state.execution.epic.first_node]
         self.state.execution.current_node_id = self.state.execution.epic.first_node
         
@@ -392,7 +409,7 @@ class Replay:
             return
             
         if self.use_mock:
-            from core.backend.mock_anthropic import MockAnthropicClient
+            from core.backend.client.mock_anthropic import MockAnthropicClient
             base_client = MockAnthropicClient()
         else:
             api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -402,7 +419,7 @@ class Replay:
             base_client = anthropic.Anthropic(api_key=api_key)
         
         # Wrap the client to save all requests and responses
-        from core.backend.client_wrapper import ClientWrapper
+        from core.backend.client.client_wrapper import ClientWrapper
         self.client = ClientWrapper(base_client, self.version_dir)
 
     def _load_system_instructions(self):
@@ -414,7 +431,7 @@ class Replay:
             raise RuntimeError("System instructions file not found in session replay folder.")
 
     def _copy_system_instructions(self):
-        src_instructions_dir = "core/backend"
+        src_instructions_dir = "core/backend/system_prompts/"
         src_instructions = ["client_instructions_with_json.txt",
                             "client_instructions_indentify_issue.txt"]
         dst_instructions = os.path.join(self.replay_dir)        

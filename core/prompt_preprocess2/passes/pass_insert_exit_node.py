@@ -4,9 +4,8 @@ import networkx as nx
 import logging
 from typing import List
 
-from .ir.ir import Opcode, FE_MARKERS, INTRA_NODE_MARKERS
-from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, EpicIR
-from .parse_prompt import text_to_list2,parse_ir_markers
+from ..ir.markers import FE_MARKERS
+from ..ir.ir import Opcode, EpicIR
 
 def bfs_nodes(epic: EpicIR) -> List[str]:
     """
@@ -29,11 +28,10 @@ def bfs_nodes(epic: EpicIR) -> List[str]:
 
 def pass_insert_exit_node(epic: EpicIR) -> EpicIR:
     """Add EXIT node at the end if not already present."""
-    print("\n\nPASS: Insert Exit Node")
     
     # Make a node list based on Breadth First Search
     node_list = bfs_nodes(epic)
-    print("\n\nNode list:")
+    print("Node list:")
     print(node_list)
 
     # Check all the nodes in the node_list to see if Opcode.EXIT already exists

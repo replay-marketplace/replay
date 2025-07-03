@@ -4,21 +4,17 @@ import json
 import os
 from typing import List
 
-from .parse_prompt import extract_template
-from .parse_prompt import extract_next_word_after_marker
-from .parse_prompt import get_string_from_file
-
-from .ir.ir import Opcode, FE_MARKERS, INTRA_NODE_MARKERS
-from .ir.ir import nx_draw_graph, Opcode, print_graph, print_graph_to_file, EpicIR
+from .ir.ir import EpicIR
+from .ir.graph_visualization import nx_draw_graph, print_graph, print_graph_to_file
 
 # Import passes
 from .pass_build_graph import pass_build_epic_graph
-from .passes import pass_insert_exit_node
-from .pass_lower_debug_loop import pass_lower_debug_loop
-from .pass_lower_prompt_file_refs import pass_lower_prompt_file_refs
-from .pass_process_ro_markers import pass_process_ro_markers
+from .passes.pass_insert_exit_node import pass_insert_exit_node
+from .passes.pass_lower_debug_loop import pass_lower_debug_loop
+from .passes.pass_lower_prompt_file_refs import pass_lower_prompt_file_refs
+from .passes.pass_process_ro_markers import pass_process_ro_markers
 
-from .pass_registry import PassRegistry
+from .passes.pass_registry import PassRegistry
 
 def _save_graph_pass(epic: EpicIR, replay_dir: str, filename_base: str):
     """
@@ -28,7 +24,9 @@ def _save_graph_pass(epic: EpicIR, replay_dir: str, filename_base: str):
         epic: The EpicIR graph to save
         replay_dir: Directory to save the graph files
         filename_base: Base name for the files (without extension)
+        save_passes: Whether to actually save the pass files
     """
+
     print_graph(epic.graph, True)
     
     # Save JSON format
@@ -51,18 +49,18 @@ def build_initial_graph(input_file: str) -> EpicIR:
     Returns:
         EpicIR: The initial graph
     """
-    print("\n\nBUILDING INITIAL GRAPH FROM INPUT FILE")
+    print("\nBUILDING INITIAL GRAPH FROM INPUT FILE")
     epic = EpicIR()
     return pass_build_epic_graph(epic, input_file)
 
-def prompt_preprocess3(input_file: str, replay_dir: str) -> EpicIR:
+def prompt_preprocess3(input_file: str, replay_dir: str, save_passes: bool = False) -> EpicIR:
     """
     Process a prompt file through all registered transformation passes.
     
     Args:
         input_file: Path to the input prompt file
         replay_dir: Directory to save intermediate and final files
-        
+        save_passes: Whether to save pass files for each transformation
     Returns:
         EpicIR: The final processed graph
     """
@@ -86,23 +84,24 @@ def prompt_preprocess3(input_file: str, replay_dir: str) -> EpicIR:
     epic = build_initial_graph(input_file)
     
     # Save initial graph as pass0 in passes/ directory
-    _save_graph_pass(epic, passes_dir, "pass0_initial_graph")
+    if save_passes:
+        _save_graph_pass(epic, passes_dir, "pass0_initial_graph")
     
     # Step 2: Execute all registered transformation passes
     for i, pass_info in enumerate(pass_registry.get_all_passes(), 1):
-        print(f"\n\nPASS: {pass_info.name}")
-        if pass_info.description:
-            print(f"Description: {pass_info.description}")
+        print(f"\nPASS: {pass_info.name}")
+        if pass_info.description: 
+            description = pass_info.description.split('\n')[0]
+            print(f"Description: {description}")
         
         # Execute the pass
         epic = pass_info.func(epic)
         
         # Save graph after each pass in passes/ subdirectory
-        _save_graph_pass(epic, passes_dir, f"pass{i}_{pass_info.name}")
+        if save_passes:
+            _save_graph_pass(epic, passes_dir, f"pass{i}_{pass_info.name}")
     
     # Step 3: Generate final graph visualization files (overwrite initial ones)
-    nx_draw_graph(epic.graph, replay_dir, "epic.png")
-    print_graph_to_file(epic.graph, replay_dir, "epic.txt", True)
     _save_graph_pass(epic, replay_dir, "epic")
     
     return epic

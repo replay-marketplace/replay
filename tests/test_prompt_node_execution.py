@@ -1,6 +1,6 @@
 from pathlib import Path
 from core.backend.replay import Replay, InputConfig
-from core.backend.mock_anthropic import MockAnthropicClient
+from core.backend.client.mock_anthropic import MockAnthropicClient
 
 def test_prompt_node_execution_step_by_step(tmp_path):
     """Test prompt node execution step by step with direct access to mock client data."""

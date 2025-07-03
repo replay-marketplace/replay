@@ -2,11 +2,20 @@ import networkx as nx
 import logging
 from typing import List
 
-from .ir.ir import EpicIR, Opcode
+from ..ir.ir import EpicIR, Opcode
 
-def get_run_exit_code(run_node) -> str:
+def get_run_exit_code(run_node: dict) -> str:
     """
-    Get the file path for the command exit code.
+    Extract the exit code from a RUN node.
+    
+    Args:
+        run_node (dict): The RUN node containing execution results
+        
+    Returns:
+        str: The exit code from the command execution
+        
+    Raises:
+        ValueError: If the exit code is not found in the node contents
     """
     # Get the "command_result_file" from node contents
     exit_code = run_node.get('contents', {}).get('exit_code', None)
@@ -15,10 +24,16 @@ def get_run_exit_code(run_node) -> str:
     
     return exit_code
 
-# type: "stdout" or "stderr"
-def get_run_log(run_node, type: str) -> str:
+def get_run_log(run_node: dict, type: str) -> str:
     """
-    Get the file path for the run log.
+    Extract the log file path from a RUN node.
+    
+    Args:
+        run_node (dict): The RUN node containing execution results
+        type (str): The type of log to retrieve ("stdout" or "stderr")
+        
+    Returns:
+        str: The file path for the requested log type, or None if not found
     """
     # Get the "command_result_file" from node contents
     run_log_file_path = run_node.get('contents', {}).get(f"{type}_file", None)
@@ -32,7 +47,49 @@ def get_run_log(run_node, type: str) -> str:
 #   After this we go back to run the original command and repeat the process 
 #   till we fix the issue or hit the iteration limit.
 def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
-    print("\n\nPASS: Lower Debug Loop")
+    """
+    Lower DEBUG_LOOP nodes into a retry loop with fix mechanism.
+    
+    This pass transforms high-level DEBUG_LOOP nodes into a concrete implementation
+    that repeatedly runs a command until it succeeds or hits an iteration limit.
+    The lowering creates:
+    
+    1. A RUN node to execute the command
+    2. A CONDITIONAL node to check success/failure
+    3. A FIX node to analyze failures and suggest fixes
+    4. Control flow edges to create the retry loop
+    
+    Flow pattern:
+    ```
+    [previous] -> RUN -> CONDITIONAL -> [success_target]
+                           |
+                           v (on failure)
+                         FIX -> (back to RUN)
+    ```
+    
+    The DEBUG_LOOP node contains:
+    - command: The shell command to execute repeatedly
+    
+    The generated structure includes:
+    - RUN node: Executes the command and captures results
+    - CONDITIONAL node: Checks exit code and manages iteration count
+    - FIX node: Analyzes failures and applies corrections
+    
+    Args:
+        epic (EpicIR): The intermediate representation graph to transform
+        
+    Returns:
+        EpicIR: The modified graph with DEBUG_LOOP nodes lowered
+        
+    Raises:
+        ValueError: If multiple DEBUG_LOOP nodes found (only one supported)
+        ValueError: If command not found in DEBUG_LOOP node
+        ValueError: If DEBUG_LOOP node has multiple predecessors/successors
+    
+    Note:
+        Currently supports lowering only one DEBUG_LOOP node per graph.
+        The iteration limit is hardcoded to 5 attempts.
+    """
 
     # Find DEBUG_LOOP node, support lowering only one. 
     debug_loop_node = None
@@ -57,7 +114,7 @@ def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
     if debug_loop_node_command is None:
         raise ValueError(f"Command not found for DEBUG_LOOP node: {debug_loop_node}")
     else:
-        print(f"DEBUG_LOOP node command: {debug_loop_node_command}")
+        print(f"Command: \n\t{debug_loop_node_command}")
 
     # Delete the DEBUG_LOOP node
     debug_loop_predecessors = list(epic.graph.predecessors(debug_loop_node_id))
@@ -83,30 +140,15 @@ def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
                                     "run_node_id": run_check_node,
                                     "true_node_target": "",
                                     "false_node_target": "",
-                                    "iteration_max":   3, # runtime
+                                    "iteration_max":   5, # runtime
                                     "condition": False,   # runtime
                                     })
     
 
-    # ----- Make a FixIt node -----
-    # To be expanded into 2 prompts:
-    # Prompt 1: Review the error log and idenfity files that need to be fixed.
-    # Prompt 2: Fix the files
-    def get_fix_it_prompt(run_node) -> str:
-        run_stderr_file_path = get_run_log(run_node, "stderr")
-        if(run_stderr_file_path is None):
-            logger.warning(f"Run node {run_node} has no stderr file path")
-        
-        return         
-
-    # read file content client_instructions_indentify_issue.txt from replay folder
-    loop_prompt_investigate_node = epic.add_node(opcode=Opcode.PROMPT, 
-    contents={"prompt": "Analyze the error log at @run_logs:{run_stderr_file_path} and identify what must be fixed.",
-              "type": "investigation"})
-    
-    loop_prompt_informed_fixnode = epic.add_node(opcode=Opcode.PROMPT, contents={
-        "prompt": "You identified that @code:{path_to_fix} needs to be fixed @include_response",
-        "include_response": loop_prompt_investigate_node})
+    # ----- Make a FIX node -----
+    # This will analyze the RUN node's logs and suggest fixes
+    fix_node = epic.add_node(opcode=Opcode.FIX, 
+                            contents={"run_ref": run_check_node})
         
     # Add edges for DEBUG_LOOP node
     epic.graph.add_edge(debug_loop_predecessor, run_check_node)    
@@ -116,22 +158,15 @@ def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
         
     # Connect the conditional flow:
     # If condition is true (worked): go to debug_loop_user (exit)
-    # If condition is false (not worked): go to loop_prompt (fix it)
+    # If condition is false (not worked): go to fix_node (fix it)
     epic.graph.add_edge(conditional_node, debug_loop_successor)  # true path - exit
-    epic.graph.add_edge(conditional_node, loop_prompt_investigate_node) # false path - fix it
+    epic.graph.add_edge(conditional_node, fix_node) # false path - fix it
     
-    # Connect the fix-it loop
-    epic.graph.add_edge(loop_prompt_investigate_node, loop_prompt_informed_fixnode)
-    epic.graph.add_edge(loop_prompt_informed_fixnode, run_check_node)
-    epic.graph.add_edge(run_check_node, conditional_node)  # back to conditional to check again
+    # Connect the fix loop back to the run node
+    epic.graph.add_edge(fix_node, run_check_node)
     
     # Set the conditional node targets
     epic.graph.nodes[conditional_node]['contents']['true_node_target'] = debug_loop_successor
-
-    epic.graph.nodes[conditional_node]['contents']['false_node_target'] = loop_prompt_investigate_node
-
-   
-    
-    
+    epic.graph.nodes[conditional_node]['contents']['false_node_target'] = fix_node
 
     return epic

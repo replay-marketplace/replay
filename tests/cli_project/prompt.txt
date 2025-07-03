@@ -2,9 +2,6 @@
 
 /DOCS docs
 
-/DEBUG_LOOP 
-@command:"while true; do count=$(ls XXX3/test_project/1/replay/run_logs | wc -l) echo "$count files found" >&1 if [ $count -eq 4 ]; then exit 0 else echo "Not enough files yet" >&2 exit 1 fi done"
-
 /PROMPT Hello! We are referencing @docs:doc1.md
 
 /PROMPT Wow! Can I also reference from @template:template1.py
