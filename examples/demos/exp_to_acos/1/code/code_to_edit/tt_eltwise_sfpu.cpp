@@ -5,9 +5,10 @@
 #include <cstdint>
 #include "compute_kernel_api/common.h"
 #include "compute_kernel_api/tile_move_copy.h"
-#include "compute_kernel_api.h"
+#include "compute_kernel_api/eltwise_unary/exp_to_acos.h"
 #include "compute_kernel_api/eltwise_unary/eltwise_unary.h"
 #include "compute_kernel_api/eltwise_unary/sfpu_split_includes.h"
+#include "compute_kernel_api.h"
 
 namespace NAMESPACE {
 void MAIN {
@@ -24,8 +25,8 @@ void MAIN {
             cb_wait_front(tt::CBIndex::c_0, 1);
             copy_tile(tt::CBIndex::c_0, 0, 0);
 
-            acos_tile_init(); 
-            acos_tile(0);
+            exp_to_acos_tile_init(); 
+            exp_to_acos_tile(0);
 
             tile_regs_commit();
             tile_regs_wait();

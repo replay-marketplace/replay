@@ -16,6 +16,9 @@ def cfg_traversal_init_queue(epic: EpicIR) -> list:
 def cfg_traversal_step(epic: EpicIR, queue: list) -> tuple[list, str]:
     DEBUG = True
     INDENT = 2
+    
+    if len(queue) == 0:
+        return queue, None
 
     current_node = queue.pop()
     debug_print(f"\nCurrent node: {current_node}", INDENT, DEBUG)

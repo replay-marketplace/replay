@@ -75,8 +75,7 @@ def test_new_op():
     dst_bank_id = 0
 
     shape = [1, num_tiles, 32, 32]
-    # Generate random data between -1 and 1 for acos input
-    data = 2 * torch.rand(shape).to(torch.bfloat16) - 1
+    data = torch.rand(shape).to(torch.bfloat16)
 
     dram_memory_config = ttnn.DRAM_MEMORY_CONFIG
 

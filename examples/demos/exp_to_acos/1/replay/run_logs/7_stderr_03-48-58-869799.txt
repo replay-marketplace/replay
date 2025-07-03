@@ -1,0 +1,55 @@
+2025-07-03 03:48:55.183 | DEBUG    | ttnn.library_tweaks:prepare_dir_as_metal_home:89 - Existing installation of 0.60.0rc4 detected
+2025-07-03 03:48:55.301 | DEBUG    | ttnn:<module>:83 - Initial ttnn.CONFIG:
+Config{cache_path=/home/ubuntu/.cache/ttnn,model_cache_path=/home/ubuntu/.cache/ttnn/models,tmp_dir=/tmp/ttnn,enable_model_cache=false,enable_fast_runtime_mode=true,throw_exception_on_fallback=false,enable_logging=false,enable_graph_report=false,enable_detailed_buffer_report=false,enable_detailed_tensor_report=false,enable_comparison_mode=false,comparison_mode_should_raise_exception=false,comparison_mode_pcc=0.9999,root_report_path=generated/ttnn/reports,report_name=std::nullopt,std::nullopt}
+Traceback (most recent call last):
+  File "/home/ubuntu/replay/examples/demos/exp_to_acos/1/code/test_newop.py", line 106, in <module>
+    test_new_op()
+  File "/home/ubuntu/replay/examples/demos/exp_to_acos/1/code/test_newop.py", line 89, in test_new_op
+    output = ttnn.generic_op(io_tensors, program_descriptor)
+  File "/home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/decorators.py", line 334, in __call__
+    return self.function(*function_args, **function_kwargs)
+RuntimeError: TT_THROW @ /project/tt_metal/impl/program/program.cpp:134: tt::exception
+info:
+Failed to generate binaries for tt_eltwise_sfpu TT_THROW @ /project/tt_metal/jit_build/build.cpp:66: tt::exception
+info:
+trisc0 build failed. Log: In file included from ../chlkc_unpack.cpp:3,
+                 from /home/ubuntu/replay/examples/demos/exp_to_acos/1/code/.ttnn_runtime_artifacts/tt_metal/hw/ckernels/wormhole_b0/metal/common/chlkc_list.h:37,
+                 from /home/ubuntu/replay/examples/demos/exp_to_acos/1/code/.ttnn_runtime_artifacts/tt_metal/hw/firmware/src/trisck.cc:14:
+/home/ubuntu/replay/examples/demos/exp_to_acos/1/code/tt_eltwise_sfpu.cpp:8:10: fatal error: compute_kernel_api/eltwise_unary/acos.h: No such file or directory
+    8 | #include "compute_kernel_api/eltwise_unary/acos.h"
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+
+backtrace:
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xae37f9) [0x7fd9f4baf7f9]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1733c) [0x7fd9f4fe333c]
+ --- tt::tt_metal::JitBuildState::compile_one(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, tt::tt_metal::JitBuildSettings const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1c5e4) [0x7fd9f4fe85e4]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1c589) [0x7fd9f4fe8589]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb5ad7) [0x7fd9f4e81ad7]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x99ee8) [0x7fda3343dee8]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb5a52) [0x7fd9f4e81a52]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1c351) [0x7fd9f4fe8351]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb9c65) [0x7fd9f4e85c65]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb8831) [0x7fd9f4e84831]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb7cb9) [0x7fd9f4e83cb9]
+ --- /lib/x86_64-linux-gnu/libstdc++.so.6(+0xdc253) [0x7fda1d7c5253]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x94ac3) [0x7fda33438ac3]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x126850) [0x7fda334ca850]
+
+backtrace:
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xe28dc9) [0x7fd9f4ef4dc9]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xe1e991) [0x7fd9f4eea991]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1c5e4) [0x7fd9f4fe85e4]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1c589) [0x7fd9f4fe8589]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb5ad7) [0x7fd9f4e81ad7]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x99ee8) [0x7fda3343dee8]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb5a52) [0x7fd9f4e81a52]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xf1c351) [0x7fd9f4fe8351]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb9c65) [0x7fd9f4e85c65]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb8831) [0x7fd9f4e84831]
+ --- /home/ubuntu/replay/replay_env/lib/python3.10/site-packages/ttnn/build/lib/_ttnncpp.so(+0xdb7cb9) [0x7fd9f4e83cb9]
+ --- /lib/x86_64-linux-gnu/libstdc++.so.6(+0xdc253) [0x7fda1d7c5253]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x94ac3) [0x7fda33438ac3]
+ --- /lib/x86_64-linux-gnu/libc.so.6(+0x126850) [0x7fda334ca850]
+

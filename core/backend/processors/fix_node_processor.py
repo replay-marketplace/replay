@@ -98,6 +98,8 @@ class FixNodeProcessor:
     def _get_relevant_code_files(self, log_file: str, replay) -> List[str]:
         """Get code files that are mentioned in the run logs."""
         # Get all file names from code folder
+        all: bool = True
+
         code_dir = replay.code_dir
         run_logs_dir = replay.run_logs_dir
         code_files = []        
@@ -109,6 +111,9 @@ class FixNodeProcessor:
                     logger.info(f"Its a file: {file_name}")
                     code_files.append(file_name)
         
+        if all:
+            return code_files
+
         relevant_code_files = []
         log_content = self._read_file_safely(os.path.join(run_logs_dir, log_file), last_n_lines=self.LAST_N_ERROR_LINES)
         logger.info(f"Log content: {log_content}")
@@ -133,7 +138,7 @@ class FixNodeProcessor:
                 try:
                     content = self._read_file_safely(file_path, last_n_lines)
                     files.append(FileReference(path=file_ref, content=content))
-                    logger.info(f"Added {file_type} to edit: {file_ref}")
+                    logger.info(f"Added {file_type} file: {file_ref}")
                 except Exception as e:
                     logger.error(f"Error reading {file_type} {file_path}: {e}")
             else:
@@ -143,12 +148,17 @@ class FixNodeProcessor:
 
     def _build_llm_request(self, run_logs_files: List[FileReference], code_files: List[FileReference], replay) -> LLMRequest:
         """Build the LLM request for analysis."""
-        prompt = "Review the error logs and suggest fixes for the code files."
+        prompt = """
+        Review the error logs and suggest fixes for the code files. 
+        Don't create new files. Don't make any drastic changes. 
+        Carefully review memory, it may contain useful information.
+        For wrong includes and api calls, request a "commands_to_run" get_api_reference(<api_name|or_header_name>) to get the correct API reference and examples.
+        """
         
         return LLMRequest(
             prompt=prompt,
             code_to_edit=code_files,
-            read_only_files=[],
+            read_only_files=[], # need to pickup read only files from all the prompts before the test run??? 🤔
             run_logs_files=run_logs_files,
             memory=replay.state.execution.memory # use memory from replay state
         )
@@ -187,6 +197,15 @@ class FixNodeProcessor:
             logger.error(f"Response content: {response_content}")
             raise
 
+    def _get_mock_api_reference(self, api_name: str) -> str:
+        """Get the API reference for a given API name."""
+        return """
+header: compute_kernel_api.h
+api:
+ALWI void acos_tile(uint32_t idst) { MATH((llk_math_eltwise_unary_sfpu_acos<true>(idst))); }
+ALWI void acos_tile_init() { MATH((llk_math_eltwise_unary_sfpu_acos_init<true>())); }
+"""
+
     def _process_generic_llm_response(self, response_data: Dict[str, Any], replay) -> None:
         """Process the LLM response and save generated files."""
         if 'files' in response_data:
@@ -199,6 +218,16 @@ class FixNodeProcessor:
         if 'memory' in response_data:
             replay.state.execution.memory = response_data['memory']
             logger.info(f"Updated memory: \n{replay.state.execution.memory}")
+
+        if 'commands_to_run' in response_data:
+            logger.info(f"Commands to run: {response_data['commands_to_run']}")
+            commands_to_run = response_data['commands_to_run']
+            for command in commands_to_run:
+                if command.startswith('get_api_reference'):
+                    api_name = command.split('(')[1].split(')')[0]
+                    api_reference = self._get_mock_api_reference(api_name)
+                    replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)
+                    logger.info(f"Added api reference to memory: {api_reference} ✨✨✨")
 
     def _save_generated_file(self, file_path: str, content: str, code_dir: str) -> None:
         """Save a generated file to the code directory."""
