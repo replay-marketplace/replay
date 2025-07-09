@@ -1,2 +1,0 @@
-/PROMPT
-Make a table.txt file that has some data

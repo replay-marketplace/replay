@@ -23,7 +23,18 @@ def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
         # Store refs in the prompt node's contents
         for marker, pattern in patterns.items():
             refs = [match.strip() for match in pattern.findall(prompt_text)]
-            prompt_contents[f'{marker}_refs'] = refs
+            # Deduplicate references
+            refs = list(dict.fromkeys(refs))  # Preserves order while deduplicating
+            
+            # Append to existing refs if they exist, otherwise create new list
+            existing_refs = prompt_contents.get(f'{marker}_refs', [])
+            if existing_refs:
+                # Combine and deduplicate
+                combined_refs = existing_refs + refs
+                prompt_contents[f'{marker}_refs'] = list(dict.fromkeys(combined_refs))
+            else:
+                prompt_contents[f'{marker}_refs'] = refs
+                
             if refs:
                 print(f"Added {marker}_refs to {prompt_node}: {refs}")
         # Optionally, you could remove the marker from the prompt text here if desired
@@ -38,7 +49,18 @@ def pass_lower_prompt_file_refs(epic: EpicIR) -> EpicIR:
         prompt_contents = epic.graph.nodes[prompt_node]['contents']
         prompt_text = prompt_contents.get('prompt', '')
         refs = [match.strip() for match in run_ref_pattern.findall(prompt_text)]
-        prompt_contents[f'run_refs'] = refs
+        # Deduplicate references
+        refs = list(dict.fromkeys(refs))  # Preserves order while deduplicating
+        
+        # Append to existing refs if they exist, otherwise create new list
+        existing_refs = prompt_contents.get('run_refs', [])
+        if existing_refs:
+            # Combine and deduplicate
+            combined_refs = existing_refs + refs
+            prompt_contents['run_refs'] = list(dict.fromkeys(combined_refs))
+        else:
+            prompt_contents['run_refs'] = refs
+            
         if refs:
             print(f"Added run_refs to {prompt_node}: {refs}")
 

@@ -26,7 +26,7 @@ class PromptNodeProcessor:
     
     # Configuration constants
     #DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
-    DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
+    DEFAULT_MODEL = "claude-sonnet-4-20250514"
     DEFAULT_MAX_TOKENS = 10000
     CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt"
     
@@ -157,6 +157,11 @@ class PromptNodeProcessor:
         else:
             raise FileNotFoundError(f"Client instructions file not found: {instructions_path}")
 
+    def _extract_json(self, response):
+        json_start = response.index("{")
+        json_end = response.rfind("}")
+        return json.loads(response[json_start:json_end + 1])
+
     def _send_generic_llm_request(self, replay, node_data: Dict[str, Any], llm_request: LLMRequest) -> Dict[str, Any]:
         """Send the LLM request and return the parsed response."""
         # Convert to JSON format expected by LLM
@@ -184,12 +189,13 @@ class PromptNodeProcessor:
             system=system_prompt,
             messages=[{"role": "user", "content": request_json}]
         )
+        logger.info(f"LLM usage: {response.usage}")
         
         # Parse response
-        response_content = response.content[0].text
+        response_json = self._extract_json(response.content[0].text)
         
         try:
-            return json.loads(response_content)
+            return response_json
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse LLM response as JSON: {e}")
             logger.error(f"Response content: {response_content}")
@@ -207,7 +213,7 @@ class PromptNodeProcessor:
 
         if 'memory' in response_data:
             replay.state.execution.memory = response_data['memory']
-            logger.info(f"Updated memory: \n{replay.state.execution.memory}")
+            logger.info(f"🧠 Updated memory: \n{replay.state.execution.memory}")
 
     def _save_generated_file(self, file_path: str, content: str, code_dir: str) -> None:
         """Save a generated file to the code directory."""
@@ -221,7 +227,7 @@ class PromptNodeProcessor:
             with open(full_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             
-            logger.info(f"Saved generated file: {full_path}")
+            logger.info(f"💾 Saved generated file: {full_path}")
             
         except Exception as e:
             logger.error(f"Error saving generated file {full_path}: {e}")

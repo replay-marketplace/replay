@@ -57,6 +57,7 @@ class RunNodeProcessor:
         
         # Run the command and capture the exit code
         try:
+            logger.info(f"🧑‍💻 Running command {node_id}: \n{command_to_run} \nin {replay.code_dir}")
             result = subprocess.run(command_to_run, shell=True, cwd=replay.code_dir, 
                                   capture_output=True, text=True)
             exit_code = result.returncode

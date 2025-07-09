@@ -1,0 +1,31 @@
+/TEMPLATE templates/ttnn/newop_generic
+/DOCS docs/
+
+/PROMPT 
+We are creating a compute kernel for COSH function.
+* Think how to lower COSH into a set of more primitive operations 
+* Think step by step, how many intermediate variables must be kept at any time?
+Write the chain as a pytest into a new file called "test_lowered_cosh.py", compare to torch. 
+Make sure to cover numerical corner cases. Accuracy of 0.998 is fine.
+Each line should be no more than 1 primitive operation
+
+<lowering>
+atanh(x)
+
+1: a = 1 + x     # 1 temp
+2: b = 1 - x     # 2 temp
+3: c = b / x     # 1 temp
+4: d = log(c)    # 1 temp
+return d / 2
+
+</lowering>
+
+/DEBUG_LOOP @command:"pytest test_lowered_cosh.py"
+
+/PROMPT
+Update @code:test_newop.py to compare against torch COSH
+Reference the lowering from @code:test_lowered_cosh.py and implement the operation in @code:tt_eltwise_sfpu2.cpp
+@docs:kernel_api_sfpu.md
+@docs:host_api_py.md
+
+/DEBUG_LOOP @command:"python3 test_newop.py"

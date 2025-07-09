@@ -39,17 +39,39 @@ def get_run_log(run_node: dict, type: str) -> str:
     run_log_file_path = run_node.get('contents', {}).get(f"{type}_file", None)
     return run_log_file_path
 
-# Runs a command
-# If it succeeds, exit
-# If it fails, run a fix-it chain
-#   The first prompt in the fix-it chain runs a command to investigate the issue
-#   The second prompt in the fix-it chain runs a command to fix the issue.
-#   After this we go back to run the original command and repeat the process 
-#   till we fix the issue or hit the iteration limit.
+
 def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
     """
     Lower DEBUG_LOOP nodes into a retry loop with fix mechanism.
+    """
+
+    while True:
+        debug_loop_node, debug_loop_node_id = find_first_debug_loop_node(epic)
+        if debug_loop_node is None:
+            break
+        replace_debug_loop_node(epic, debug_loop_node, debug_loop_node_id)
     
+    return epic
+
+
+def find_first_debug_loop_node(epic: EpicIR) -> tuple[dict, str]:    
+    """
+    Returns:
+        tuple[dict, str]: A tuple containing the DEBUG_LOOP node and its ID, or None if not found
+    """
+    debug_loop_node = None
+    debug_loop_node_id = None
+
+    for node_id in epic.graph.nodes():
+        if epic.graph.nodes[node_id]['opcode'] == Opcode.DEBUG_LOOP:
+            debug_loop_node = epic.graph.nodes[node_id]
+            debug_loop_node_id = node_id
+            break;
+
+    return debug_loop_node, debug_loop_node_id
+
+def replace_debug_loop_node(epic: EpicIR, debug_loop_node: dict, debug_loop_node_id: str):
+    """
     This pass transforms high-level DEBUG_LOOP nodes into a concrete implementation
     that repeatedly runs a command until it succeeds or hits an iteration limit.
     The lowering creates:
@@ -90,26 +112,7 @@ def pass_lower_debug_loop(epic: EpicIR) -> EpicIR:
         Currently supports lowering only one DEBUG_LOOP node per graph.
         The iteration limit is hardcoded to 5 attempts.
     """
-
-    # Find DEBUG_LOOP node, support lowering only one. 
-    debug_loop_node = None
-    debug_loop_node_id = None
-    found = 0
-    for node_id in epic.graph.nodes():
-        if epic.graph.nodes[node_id]['opcode'] == Opcode.DEBUG_LOOP:
-            debug_loop_node = epic.graph.nodes[node_id]
-            debug_loop_node_id = node_id
-            found += 1
     
-    if(found > 1):
-        logger.error(f"Multiple DEBUG_LOOP nodes found: {found}. Only one is supported for now.")
-        return epic
-
-    if debug_loop_node is None:
-        print("No DEBUG_LOOP node found")
-        return epic
-    
-    #print(f"DEBUG_LOOP node found: {debug_loop_node['id']}")
     debug_loop_node_command = debug_loop_node.get('contents', {}).get('command', None)
     if debug_loop_node_command is None:
         raise ValueError(f"Command not found for DEBUG_LOOP node: {debug_loop_node}")
