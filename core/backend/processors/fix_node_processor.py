@@ -59,7 +59,7 @@ class FixNodeProcessor:
             stderr_file, stdout_file = self._extract_run_log_files(run_node, replay)
             stderr_file_content = self._load_files_from_directory([stdout_file], replay.run_logs_dir, "run log file", last_n_lines=self.LAST_N_ERROR_LINES)
             run_logs_files = self._load_files_from_directory([stderr_file], replay.run_logs_dir, "stderr file", last_n_lines=self.LAST_N_ERROR_LINES)
-            logger.info(f"Found attached run logs files: {run_logs_files}")
+            logger.debug(f"Found attached run logs files: {run_logs_files}")
 
             # Get relevant code files mentioned in the logs
             # Use stderr for error analysis, but could be enhanced to use both
@@ -105,11 +105,11 @@ class FixNodeProcessor:
         code_files = []        
 
         if os.path.exists(code_dir):
-            logger.info(f"Found code files in {code_dir}")
+            logger.debug(f"Found code files in {code_dir}")
             for file_name in os.listdir(code_dir):
-                logger.info(f"Found code file: {file_name}")
+                logger.debug(f"Found code file: {file_name}")
                 if os.path.isfile(os.path.join(code_dir, file_name)):
-                    logger.info(f"Its a file: {file_name}")
+                    logger.debug(f"Its a file: {file_name}")
                     code_files.append(file_name)
 
         code_files = [f for f in code_files if not f.startswith('.')] # exclude files/folders starting with .
@@ -118,14 +118,14 @@ class FixNodeProcessor:
 
         relevant_code_files = []
         log_content = self._read_file_safely(os.path.join(run_logs_dir, log_file), last_n_lines=self.LAST_N_ERROR_LINES)
-        logger.info(f"Log content: {log_content}")
+        logger.debug(f"Log content: {log_content}")
         for file_name in code_files:
-            logger.info(f"Checking if {file_name} is in log content")
+            logger.debug(f"Checking if {file_name} is in log content")
             if file_name in log_content:
-                logger.info(f"Found {file_name} in log content")
+                logger.debug(f"Found {file_name} in log content")
                 relevant_code_files.append(file_name)
             else:
-                logger.info(f"Did not find {file_name} in log content")
+                logger.debug(f"Did not find {file_name} in log content")
         
         return relevant_code_files
 
