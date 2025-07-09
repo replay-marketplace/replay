@@ -51,7 +51,7 @@ def prepare_newop_program(device, input_tensor, output_tensor, num_tiles, src_ba
     )
     
     compute_kernel_descriptor = ttnn.KernelDescriptor(
-        kernel_source=kernel_path("tt_eltwise_sfpu.cpp"),
+        kernel_source=kernel_path("tt_eltwise_sfpu2.cpp"),
         core_ranges=core_grid,
         compile_time_args=compute_compile_time_args,
         defines=[],

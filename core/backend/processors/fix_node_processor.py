@@ -57,8 +57,8 @@ class FixNodeProcessor:
             
             # Extract run logs from the RUN node
             stderr_file, stdout_file = self._extract_run_log_files(run_node, replay)
-            stderr_file_content = self._load_files_from_directory([stderr_file], replay.run_logs_dir, "stderr file", last_n_lines=self.LAST_N_ERROR_LINES)
-            run_logs_files = self._load_files_from_directory([stderr_file], replay.run_logs_dir, "run log file", last_n_lines=self.LAST_N_ERROR_LINES)
+            stderr_file_content = self._load_files_from_directory([stdout_file], replay.run_logs_dir, "run log file", last_n_lines=self.LAST_N_ERROR_LINES)
+            run_logs_files = self._load_files_from_directory([stderr_file], replay.run_logs_dir, "stderr file", last_n_lines=self.LAST_N_ERROR_LINES)
             logger.info(f"Found attached run logs files: {run_logs_files}")
 
             # Get relevant code files mentioned in the logs
@@ -103,6 +103,7 @@ class FixNodeProcessor:
         code_dir = replay.code_dir
         run_logs_dir = replay.run_logs_dir
         code_files = []        
+
         if os.path.exists(code_dir):
             logger.info(f"Found code files in {code_dir}")
             for file_name in os.listdir(code_dir):
@@ -110,7 +111,8 @@ class FixNodeProcessor:
                 if os.path.isfile(os.path.join(code_dir, file_name)):
                     logger.info(f"Its a file: {file_name}")
                     code_files.append(file_name)
-        
+
+        code_files = [f for f in code_files if not f.startswith('.')] # exclude files/folders starting with .
         if all:
             return code_files
 
@@ -163,6 +165,11 @@ class FixNodeProcessor:
             memory=replay.state.execution.memory # use memory from replay state
         )
 
+    def _extract_json(self, response):
+        json_start = response.index("{")
+        json_end = response.rfind("}")
+        return json.loads(response[json_start:json_end + 1])
+
     def _send_llm_request(self, replay, llm_request: LLMRequest) -> Dict[str, Any]:
         """Send the LLM request and return the parsed response."""
         # Convert to JSON format expected by LLM
@@ -174,7 +181,7 @@ class FixNodeProcessor:
         }
         request_json = json.dumps(request_dict, indent=2)
         
-        logger.info(f"Sending FIX request to LLM with {len(llm_request.run_logs_files)} run logs files and {len(llm_request.code_to_edit)} code files")
+        logger.info(f"⚒️ Sending FIX request to LLM with {len(llm_request.run_logs_files)} run logs files and {len(llm_request.code_to_edit)} code files")
         
         # Get client instructions
         system_prompt = self._get_client_instructions(replay.replay_dir)
@@ -186,24 +193,29 @@ class FixNodeProcessor:
             system=system_prompt,
             messages=[{"role": "user", "content": request_json}]
         )
+        logger.info(f"LLM usage: {response.usage}")
         
-        # Parse response
-        response_content = response.content[0].text
-        
+        # Parse response        
+        response_json = self._extract_json(response.content[0].text)
         try:
-            return json.loads(response_content)
+            return response_json
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"Response content: {response_content}")
+            logger.error(f"Response content: {response.content[0].text}")
             raise
 
     def _get_mock_api_reference(self, api_name: str) -> str:
         """Get the API reference for a given API name."""
         return """
-header: compute_kernel_api.h
-api:
-ALWI void acos_tile(uint32_t idst) { MATH((llk_math_eltwise_unary_sfpu_acos<true>(idst))); }
-ALWI void acos_tile_init() { MATH((llk_math_eltwise_unary_sfpu_acos_init<true>())); }
+## Wrong header usage
+If you get an error like "No such file or directory" for an include - remove this include.
+
+## no match for 'operator/'
+// Instead of: result = (1.0f / val) * other_val;
+sfpi::vFloat result = ckernel::sfpu::_sfpu_reciprocal_(val) * other_val;
+
+// Or for constants:
+sfpi::vFloat one = sfpi::vFloat(1.0f);  // Convert to vFloat first
 """
 
     def _process_generic_llm_response(self, response_data: Dict[str, Any], replay) -> None:
@@ -217,7 +229,7 @@ ALWI void acos_tile_init() { MATH((llk_math_eltwise_unary_sfpu_acos_init<true>()
                     self._save_generated_file(file_path, file_content, replay.code_dir)
         if 'memory' in response_data:
             replay.state.execution.memory = response_data['memory']
-            logger.info(f"Updated memory: \n{replay.state.execution.memory}")
+            logger.info(f"🧠 Updated memory: \n{replay.state.execution.memory}")
 
         if 'commands_to_run' in response_data:
             logger.info(f"Commands to run: {response_data['commands_to_run']}")
@@ -226,8 +238,8 @@ ALWI void acos_tile_init() { MATH((llk_math_eltwise_unary_sfpu_acos_init<true>()
                 if command.startswith('get_api_reference'):
                     api_name = command.split('(')[1].split(')')[0]
                     api_reference = self._get_mock_api_reference(api_name)
-                    replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)
-                    logger.info(f"Added api reference to memory: {api_reference} ✨✨✨")
+                    replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)                    
+                    logger.info(f"✨✨✨ Tool is used. Added a reference to memory: {api_reference}")
 
     def _save_generated_file(self, file_path: str, content: str, code_dir: str) -> None:
         """Save a generated file to the code directory."""
@@ -241,7 +253,7 @@ ALWI void acos_tile_init() { MATH((llk_math_eltwise_unary_sfpu_acos_init<true>()
             with open(full_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             
-            logger.info(f"Saved updated file: {full_path}")
+            logger.info(f"💾 Saved updated file: {full_path}")
             
         except Exception as e:
             logger.error(f"Error saving generated file {full_path}: {e}")

@@ -54,8 +54,10 @@ class ConditionalNodeProcessor:
         next_node = None
         if condition_result:
             next_node = contents['true_node_target']
+            logger.info(f"✅ True branch")
         else:
             next_node = contents['false_node_target']
+            logger.info(f"❌ False branch")
 
         queue, next_node = cfg_traversal_step(replay.state.execution.epic, [next_node])
         replay.state.execution.control_flow_graph_queue = queue

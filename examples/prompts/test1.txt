@@ -1,8 +1,0 @@
-/TEMPLATE input_const/templates/build_scripts/
-
-/PROMPT
-Write a python program that adds two numbers. Also put a tiny little bug into the code. 
-
-/DEBUG_LOOP
-
-
