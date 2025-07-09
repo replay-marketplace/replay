@@ -83,7 +83,7 @@ class RunNodeProcessor:
                 with open(file_path, "w") as f:
                     f.write(result_text)
                 
-                logger.info(f"Wrote {suffix} to file: {file_path}")
+                logger.debug(f"Wrote {suffix} to file: {file_path}")
                 logger.debug(f"Contents of {suffix} file: \n{result_text}")
 
                 return file_name
