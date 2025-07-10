@@ -1,17 +1,13 @@
 import json
 import logging
 import os
-from typing import Dict, List, Any
+import re
+from typing import Dict, List, Any, Union
 from dataclasses import dataclass
 from core.prompt_preprocess2.ir.ir import Opcode
+from .base_processor import BaseProcessor, FileReference
 
 logger = logging.getLogger(__name__)
-
-@dataclass
-class FileReference:
-    """Represents a file reference with path and content."""
-    path: str
-    content: str
 
 @dataclass
 class LLMRequest:
@@ -22,14 +18,16 @@ class LLMRequest:
     run_logs_files: List[FileReference]
     memory: List[str]
 
-class FixNodeProcessor:
-    """Processes FIX nodes by analyzing run logs and applying fixes to code."""
+class FixNodeProcessor(BaseProcessor):
+    """Processes FIX nodes by analyzing run logs and applying fixes to code using XML and tool use."""
     
     # Configuration constants
     DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
     DEFAULT_MAX_TOKENS = 10000
     LAST_N_ERROR_LINES = 100
-    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt" #"client_instructions_indentify_issue.txt"
+    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_xml.txt"
+    MAX_CONVERSATION_TOKENS = 100000  # Conservative limit for context window
+    TOKEN_ESTIMATION_RATIO = 4  # Characters per token (rough estimation)
     
     def process(self, replay, node: dict) -> None:
         """
@@ -68,14 +66,14 @@ class FixNodeProcessor:
             if log_file_for_analysis:
                 relevant_code_files = self._get_relevant_code_files(log_file_for_analysis, replay)
                 relevant_code_files_contents = self._load_files_from_directory(relevant_code_files, replay.code_dir, "code file")            
-                
 
             # Build and send LLM request
             llm_request = self._build_llm_request(run_logs_files, relevant_code_files_contents, replay)
             response_data = self._send_llm_request(replay, llm_request)
             
-            # Apply fixes based on LLM response
-            self._process_generic_llm_response(response_data, replay)
+            # Process response using tool use and XML parsing
+            original_request = f"{llm_request.prompt}\n\n{self._build_xml_request(llm_request)}"
+            self._process_llm_response(response_data, replay, original_request)
             
             logger.info(f"Processed FIX node {node}")
             
@@ -98,7 +96,7 @@ class FixNodeProcessor:
     def _get_relevant_code_files(self, log_file: str, replay) -> List[str]:
         """Get code files that are mentioned in the run logs."""
         # Get all file names from code folder
-        all: bool = True
+        all: bool = False  # Changed from True to False to actually filter files
 
         code_dir = replay.code_dir
         run_logs_dir = replay.run_logs_dir
@@ -117,8 +115,8 @@ class FixNodeProcessor:
             return code_files
 
         relevant_code_files = []
-        log_content = self._read_file_safely(os.path.join(run_logs_dir, log_file), last_n_lines=self.LAST_N_ERROR_LINES)
-        logger.debug(f"Log content: {log_content}")
+        log_content = self.read_file_safely(os.path.join(run_logs_dir, log_file), last_n_lines=self.LAST_N_ERROR_LINES)
+        logger.info(f"Log content: {log_content}")
         for file_name in code_files:
             logger.debug(f"Checking if {file_name} is in log content")
             if file_name in log_content:
@@ -138,7 +136,7 @@ class FixNodeProcessor:
             
             if os.path.exists(file_path):
                 try:
-                    content = self._read_file_safely(file_path, last_n_lines)
+                    content = self.read_file_safely(file_path, last_n_lines)
                     files.append(FileReference(path=file_ref, content=content))
                     logger.info(f"Added {file_type} file: {file_ref}")
                 except Exception as e:
@@ -154,122 +152,199 @@ class FixNodeProcessor:
         Review the error logs and suggest fixes for the code files. 
         Don't create new files. Don't make any drastic changes. 
         Carefully review memory, it may contain useful information.
-        For wrong includes and api calls, request a "commands_to_run" get_api_reference(<api_name|or_header_name>) to get the correct API reference and examples.
+        For wrong includes and api calls, use the get_api_reference tool to get the correct API reference and examples.
         """
         
         return LLMRequest(
             prompt=prompt,
             code_to_edit=code_files,
-            read_only_files=[], # need to pickup read only files from all the prompts before the test run??? 🤔
+            read_only_files=run_logs_files, # run logs are read-only
             run_logs_files=run_logs_files,
             memory=replay.state.execution.memory # use memory from replay state
         )
 
-    def _extract_json(self, response):
-        json_start = response.index("{")
-        json_end = response.rfind("}")
-        return json.loads(response[json_start:json_end + 1])
+    def _build_xml_request(self, llm_request: LLMRequest) -> str:
+        """Build XML format request for LLM using semantic tags."""
+        xml_parts = []
+        
+        # Add code files to edit (no readonly attribute)
+        if llm_request.code_to_edit:
+            for file_ref in llm_request.code_to_edit:
+                xml_parts.append(f'<file path="{file_ref.path}">')
+                xml_parts.append(self.escape_xml(file_ref.content))
+                xml_parts.append('</file>')
+        
+        # Add read-only files (with readonly flag)
+        if llm_request.read_only_files:
+            for file_ref in llm_request.read_only_files:
+                xml_parts.append(f'<file path="{file_ref.path}" readonly>')
+                xml_parts.append(self.escape_xml(file_ref.content))
+                xml_parts.append('</file>')
+        
+        # Add memory
+        if llm_request.memory:
+            xml_parts.append('<memory>')
+            for entry in llm_request.memory:
+                xml_parts.append(f'<entry>{self.escape_xml(entry)}</entry>')
+            xml_parts.append('</memory>')
+        
+        return '\n'.join(xml_parts)
 
-    def _send_llm_request(self, replay, llm_request: LLMRequest) -> Dict[str, Any]:
-        """Send the LLM request and return the parsed response."""
-        # Convert to JSON format expected by LLM
-        request_dict = {
-            "prompt": llm_request.prompt,
-            "run_logs_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.run_logs_files],
-            "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
-            "memory": llm_request.memory
-        }
-        request_json = json.dumps(request_dict, indent=2)
+    def _send_llm_request(self, replay, llm_request: LLMRequest) -> Union[str, Dict[str, Any]]:
+        """Send the LLM request and return the response."""
+        # Build XML request
+        xml_request = self._build_xml_request(llm_request)
+        
+        # Combine prompt with XML content
+        full_request = f"{llm_request.prompt}\n\n{xml_request}"
         
         logger.info(f"⚒️ Sending FIX request to LLM with {len(llm_request.run_logs_files)} run logs files and {len(llm_request.code_to_edit)} code files")
         
         # Get client instructions
         system_prompt = self._get_client_instructions(replay.replay_dir)
         
-        # Send to LLM
+        # Get available tools for Anthropic with proper schema format
+        tools = self.get_anthropic_tools_schema()
+        
+        # Send to LLM with tools enabled
         response = replay.client.messages.create(
             model=self.DEFAULT_MODEL,
             max_tokens=self.DEFAULT_MAX_TOKENS,
             system=system_prompt,
-            messages=[{"role": "user", "content": request_json}]
+            messages=[{"role": "user", "content": full_request}],
+            tools=tools
         )
         logger.info(f"LLM usage: {response.usage}")
         
-        # Parse response        
-        response_json = self._extract_json(response.content[0].text)
-        try:
-            return response_json
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"Response content: {response.content[0].text}")
-            raise
+        return response
 
-    def _get_mock_api_reference(self, api_name: str) -> str:
-        """Get the API reference for a given API name."""
-        return """
-## Wrong header usage
-If you get an error like "No such file or directory" for an include - remove this include.
+    def _process_llm_response(self, response, replay, original_request=None) -> None:
+        """Process the LLM response using proper Anthropic tool use handling."""
+        # Check if response contains tool use
+        if response.stop_reason == "tool_use":
+            # Build initial conversation history from the original request
+            conversation_history = self._build_initial_conversation_history(original_request) if original_request else []
+            # Handle tool use according to Anthropic specification
+            self._handle_tool_use_response(response, replay, conversation_history)
+        else:
+            # Handle regular response - just log it and store in memory
+            response_content = response.content[0].text if response.content else ""
+            logger.info(f"Received non-tool response. Content length: {len(response_content)}")
+            
+            if response_content.strip():
+                # Store the response in memory for future reference
+                self.store_in_memory(replay, "fix_processor_response", f"LLM response: {response_content[:500]}...")
+                logger.info(f"LLM response: {response_content}")
+            else:
+                logger.info("Empty response received")
 
-## no match for 'operator/'
-// Instead of: result = (1.0f / val) * other_val;
-sfpi::vFloat result = ckernel::sfpu::_sfpu_reciprocal_(val) * other_val;
+    def _build_initial_conversation_history(self, original_request: str) -> List[Dict[str, Any]]:
+        """Build the initial conversation history from the original request."""
+        return [{"role": "user", "content": original_request}]
 
-// Or for constants:
-sfpi::vFloat one = sfpi::vFloat(1.0f);  // Convert to vFloat first
-"""
-
-    def _process_generic_llm_response(self, response_data: Dict[str, Any], replay) -> None:
-        """Process the LLM response and save generated files."""
-        if 'files' in response_data:
-            for file_data in response_data['files']:
-                file_path = file_data.get('path_and_filename', '')
-                file_content = file_data.get('contents', '')
-                
-                if file_path and file_content:
-                    self._save_generated_file(file_path, file_content, replay.code_dir)
-        if 'memory' in response_data:
-            replay.state.execution.memory = response_data['memory']
-            logger.info(f"🧠 Updated memory: \n{replay.state.execution.memory}")
-
-        if 'commands_to_run' in response_data:
-            logger.info(f"Commands to run: {response_data['commands_to_run']}")
-            commands_to_run = response_data['commands_to_run']
-            for command in commands_to_run:
-                if command.startswith('get_api_reference'):
-                    api_name = command.split('(')[1].split(')')[0]
-                    api_reference = self._get_mock_api_reference(api_name)
-                    replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)                    
-                    logger.info(f"✨✨✨ Tool is used. Added a reference to memory: {api_reference}")
-
-    def _save_generated_file(self, file_path: str, content: str, code_dir: str) -> None:
-        """Save a generated file to the code directory."""
-        full_path = os.path.join(code_dir, file_path)
+    def _handle_tool_use_response(self, response, replay, conversation_history=None) -> None:
+        """Handle tool use response according to Anthropic specification."""
+        tool_results = self.handle_tool_use_response(response, replay, conversation_history)
         
-        try:
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            
-            # Write file
-            with open(full_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            
-            logger.info(f"💾 Saved updated file: {full_path}")
-            
-        except Exception as e:
-            logger.error(f"Error saving generated file {full_path}: {e}")
-            raise     
+        # Continue conversation with tool results
+        if tool_results:
+            self._continue_with_tool_results(response, tool_results, replay, conversation_history)
 
-    def _read_file_safely(self, file_path: str, last_n_lines: int = None) -> str:
-        """Read a file safely with proper encoding handling."""
+    def _continue_with_tool_results(self, original_response, tool_results, replay, conversation_history=None) -> None:
+        """Continue the conversation with tool results, managing conversation history and token limits."""
+        # Initialize conversation history if not provided
+        if conversation_history is None:
+            conversation_history = []
+        
+        # Add the tool use response and results to conversation history
+        conversation_history.extend([
+            {"role": "assistant", "content": original_response.content},
+            {"role": "user", "content": tool_results}  # All results in single message
+        ])
+        
+        # Check if we're approaching token limits (rough estimation)
+        estimated_tokens = self._estimate_conversation_tokens(conversation_history)
+        
+        if estimated_tokens > self.MAX_CONVERSATION_TOKENS:
+            logger.warning(f"Conversation approaching token limit ({estimated_tokens} tokens). Truncating history.")
+            # Keep only the most recent messages while preserving essential context
+            conversation_history = self._truncate_conversation_history(conversation_history, self.MAX_CONVERSATION_TOKENS // 2)
+        
+        # Get available tools
+        tools = self.get_anthropic_tools_schema()
+        
+        # Continue conversation
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                if last_n_lines is not None:
-                    return '\n'.join(f.readlines()[-last_n_lines:])
+            continuation_response = replay.client.messages.create(
+                model=self.DEFAULT_MODEL,
+                max_tokens=self.DEFAULT_MAX_TOKENS,
+                messages=conversation_history,
+                tools=tools
+            )
+            
+            # Process the final response
+            if continuation_response.stop_reason == "tool_use":
+                # Handle additional tool use if needed, passing conversation history
+                self._handle_tool_use_response(continuation_response, replay, conversation_history)
+            else:
+                # Handle regular continuation response - just log it and store in memory
+                response_content = continuation_response.content[0].text if continuation_response.content else ""
+                logger.info(f"Received continuation response. Content length: {len(response_content)}")
+                
+                if response_content.strip():
+                    # Store the response in memory for future reference
+                    self.store_in_memory(replay, "fix_processor_continuation", f"Continuation response: {response_content[:500]}...")
+                    logger.info(f"Continuation response: {response_content}")
                 else:
-                    return f.read()
+                    logger.info("Empty continuation response received")
         except Exception as e:
-            logger.error(f"Error reading file {file_path}: {e}")
-            return ""
+            logger.error(f"Error during conversation continuation: {e}")
+            # Store error in memory for debugging
+            self.store_in_memory(replay, "fix_processor_error", f"Conversation continuation error: {str(e)}")
+
+    def _estimate_conversation_tokens(self, messages: List[Dict[str, Any]]) -> int:
+        """Roughly estimate the number of tokens in the conversation."""
+        total_tokens = 0
+        for message in messages:
+            if isinstance(message.get('content'), str):
+                # Rough estimation: 1 token ≈ 4 characters
+                total_tokens += len(message['content']) // self.TOKEN_ESTIMATION_RATIO
+            elif isinstance(message.get('content'), list):
+                for content_block in message['content']:
+                    if hasattr(content_block, 'text'):
+                        total_tokens += len(content_block.text) // self.TOKEN_ESTIMATION_RATIO
+                    elif isinstance(content_block, dict) and 'text' in content_block:
+                        total_tokens += len(content_block['text']) // self.TOKEN_ESTIMATION_RATIO
+                    elif isinstance(content_block, dict) and 'input' in content_block:
+                        # Handle tool use blocks
+                        input_str = str(content_block['input'])
+                        total_tokens += len(input_str) // self.TOKEN_ESTIMATION_RATIO
+        return total_tokens
+
+    def _truncate_conversation_history(self, messages: List[Dict[str, Any]], target_tokens: int) -> List[Dict[str, Any]]:
+        """Truncate conversation history while preserving essential context."""
+        if len(messages) <= 2:
+            return messages  # Keep at least the last exchange
+        
+        # Keep the first message (original context) and the most recent messages
+        kept_messages = [messages[0]]  # Original context
+        
+        # Add recent messages from the end, staying within token limit
+        current_tokens = self._estimate_conversation_tokens(kept_messages)
+        
+        for message in reversed(messages[1:]):
+            message_tokens = self._estimate_conversation_tokens([message])
+            if current_tokens + message_tokens <= target_tokens:
+                kept_messages.append(message)
+                current_tokens += message_tokens
+            else:
+                break
+        
+        # Reverse back to chronological order
+        kept_messages.reverse()
+        
+        logger.info(f"Truncated conversation from {len(messages)} to {len(kept_messages)} messages")
+        return kept_messages
 
     def _get_client_instructions(self, replay_dir: str) -> str:
         """Load client instructions from the replay directory."""
@@ -277,7 +352,7 @@ sfpi::vFloat one = sfpi::vFloat(1.0f);  // Convert to vFloat first
         
         if os.path.exists(instructions_path):
             try:
-                return self._read_file_safely(instructions_path)
+                return self.read_file_safely(instructions_path)
             except Exception as e:
                 raise Exception(f"Error reading client instructions from {instructions_path}: {e}")
         else:

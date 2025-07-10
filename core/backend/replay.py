@@ -450,7 +450,8 @@ class Replay:
     def _copy_system_instructions(self):
         src_instructions_dir = "core/backend/system_prompts/"
         src_instructions = ["client_instructions_with_json.txt",
-                            "client_instructions_indentify_issue.txt"]
+                            "client_instructions_indentify_issue.txt",
+                            "client_instructions_with_xml.txt"]
         dst_instructions = os.path.join(self.replay_dir)        
         for src_instruction in src_instructions:
             src_instruction_path = os.path.join(src_instructions_dir, src_instruction)
