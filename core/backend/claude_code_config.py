@@ -44,14 +44,22 @@ class ClaudeCodeConfig:
         
         Priority:
         1. ANTHROPIC_AUTH_TOKEN environment variable
-        2. ANTHROPIC_API_KEY environment variable (fallback for compatibility)
-        3. API key helper from settings
+        2. ANTHROPIC_AUTH_TOKEN from ~/.claude/settings.json
+        3. ANTHROPIC_API_KEY environment variable (fallback for compatibility)
+        4. API key helper from settings
         """
-        # First check for Claude Code auth token
+        # First check for Claude Code auth token in environment
         auth_token = os.environ.get("ANTHROPIC_AUTH_TOKEN")
         if auth_token:
             logger.info("Using ANTHROPIC_AUTH_TOKEN from environment")
             return auth_token
+            
+        # Check for Claude Code auth token in settings file
+        env_vars = self.settings.get("env", {})
+        auth_token_from_settings = env_vars.get("ANTHROPIC_AUTH_TOKEN")
+        if auth_token_from_settings:
+            logger.info("Using ANTHROPIC_AUTH_TOKEN from ~/.claude/settings.json")
+            return auth_token_from_settings
             
         # Fallback to standard API key for compatibility
         api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -71,12 +79,24 @@ class ClaudeCodeConfig:
         """
         Get base URL for Claude Code API endpoint.
         
-        This should be set in environment variables for Claude Code.
+        Priority:
+        1. ANTHROPIC_BASE_URL environment variable
+        2. ANTHROPIC_BASE_URL from ~/.claude/settings.json
         """
+        # First check for base URL in environment
         base_url = os.environ.get("ANTHROPIC_BASE_URL")
         if base_url:
-            logger.info(f"Using ANTHROPIC_BASE_URL: {base_url}")
-        return base_url
+            logger.info(f"Using ANTHROPIC_BASE_URL from environment: {base_url}")
+            return base_url
+            
+        # Check for base URL in settings file
+        env_vars = self.settings.get("env", {})
+        base_url_from_settings = env_vars.get("ANTHROPIC_BASE_URL")
+        if base_url_from_settings:
+            logger.info(f"Using ANTHROPIC_BASE_URL from ~/.claude/settings.json: {base_url_from_settings}")
+            return base_url_from_settings
+            
+        return None
     
     def is_claude_code_configured(self) -> bool:
         """
