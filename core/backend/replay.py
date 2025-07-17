@@ -420,7 +420,7 @@ class Replay:
 
     def _init_client(self):
         """
-        Setup the client based on configuration (use_mock or ANTHROPIC_API_KEY)
+        Setup the client based on configuration (use_mock, Claude Code, or standard Anthropic API)
         """
         if self.client is not None:
             return
@@ -429,11 +429,29 @@ class Replay:
             from core.backend.client.mock_anthropic import MockAnthropicClient
             base_client = MockAnthropicClient()
         else:
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise RuntimeError("ANTHROPIC_API_KEY environment variable not set")
-            import anthropic
-            base_client = anthropic.Anthropic(api_key=api_key)
+            # Try Claude Code configuration first
+            from core.backend.claude_code_config import ClaudeCodeConfig
+            claude_config = ClaudeCodeConfig()
+            claude_config.log_configuration_status()
+            
+            if claude_config.is_claude_code_configured():
+                logger.info("Using Claude Code configuration")
+                import anthropic
+                client_kwargs = claude_config.get_client_kwargs()
+                base_client = anthropic.Anthropic(**client_kwargs)
+            else:
+                # Fallback to standard Anthropic API
+                logger.info("Claude Code not configured, falling back to standard Anthropic API")
+                api_key = os.environ.get("ANTHROPIC_API_KEY")
+                if not api_key:
+                    raise RuntimeError(
+                        "Neither Claude Code configuration nor ANTHROPIC_API_KEY environment variable is set. "
+                        "Please either:\n"
+                        "1. Configure Claude Code with ANTHROPIC_AUTH_TOKEN and ANTHROPIC_BASE_URL, or\n"
+                        "2. Set ANTHROPIC_API_KEY for standard Anthropic API usage"
+                    )
+                import anthropic
+                base_client = anthropic.Anthropic(api_key=api_key)
         
         # Wrap the client to save all requests and responses
         from core.backend.client.client_wrapper import ClientWrapper
