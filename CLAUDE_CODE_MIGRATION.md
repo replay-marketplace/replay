@@ -54,9 +54,15 @@ export ANTHROPIC_API_KEY="your-anthropic-api-key"
 
 The system checks authentication in this order:
 
-1. `ANTHROPIC_AUTH_TOKEN` (Claude Code)
-2. `ANTHROPIC_API_KEY` (standard Anthropic API - fallback)
-3. API key helper from `~/.claude/settings.json` (future enhancement)
+1. `ANTHROPIC_AUTH_TOKEN` environment variable (Claude Code)
+2. `ANTHROPIC_AUTH_TOKEN` from `~/.claude/settings.json` (Claude Code)
+3. `ANTHROPIC_API_KEY` environment variable (standard Anthropic API - fallback)
+4. API key helper from `~/.claude/settings.json` (future enhancement)
+
+For base URL configuration:
+
+1. `ANTHROPIC_BASE_URL` environment variable
+2. `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`
 
 ## What Changed
 

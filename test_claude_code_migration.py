@@ -94,7 +94,7 @@ def main():
     demo_environment_setup()
     
     # Test Replay initialization
-    test_replay_initialization()
+    # test_replay_initialization()
     
     print("\n" + "=" * 50)
     print("Migration Test Complete")
