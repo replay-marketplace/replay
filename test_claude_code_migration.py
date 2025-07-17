@@ -71,6 +71,13 @@ def test_replay_initialization():
         replay = Replay.from_recipe(input_config, use_mock=True)
         print("✓ Replay initialization successful with mock client")
         
+        # Also test with Claude Code SDK (non-mock)
+        try:
+            replay_claude = Replay.from_recipe(input_config, use_mock=False)
+            print("✓ Replay initialization successful with Claude Code SDK")
+        except Exception as e:
+            print(f"✗ Claude Code SDK initialization failed: {e}")
+        
         # Check if the client was properly initialized
         if hasattr(replay, 'client') and replay.client is not None:
             print("✓ Client wrapper created successfully")
@@ -94,7 +101,7 @@ def main():
     demo_environment_setup()
     
     # Test Replay initialization
-    # test_replay_initialization()
+    test_replay_initialization()
     
     print("\n" + "=" * 50)
     print("Migration Test Complete")
