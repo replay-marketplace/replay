@@ -177,8 +177,10 @@ class FixNodeProcessor:
         # Convert to JSON format expected by LLM
         request_dict = {
             "prompt": llm_request.prompt,
-            "run_logs_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.run_logs_files],
-            "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
+            # "run_logs_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.run_logs_files],
+            "run_logs_files": [f.path for f in llm_request.run_logs_files],
+            # "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
+            "code_to_edit": [f.path for f in llm_request.code_to_edit],
             "memory": llm_request.memory
         }
         request_json = json.dumps(request_dict, indent=2)

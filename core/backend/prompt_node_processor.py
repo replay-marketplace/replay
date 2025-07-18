@@ -162,8 +162,10 @@ class PromptNodeProcessor:
         # Convert to JSON format expected by LLM
         request_dict = {
             "prompt": llm_request.prompt,
-            "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
-            "read_only_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.read_only_files],
+            # "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
+            "code_to_edit": [f.path for f in llm_request.code_to_edit],
+            # "read_only_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.read_only_files],
+            "read_only_files": [f.path for f in llm_request.read_only_files],
             "memory": llm_request.memory
         }
         

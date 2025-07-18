@@ -155,6 +155,8 @@ class ClaudeCodeClientWrapper:
                 "original_kwargs": kwargs,
                 "timestamp": datetime.now().isoformat()
             }
+
+            logger.info(f"prompt: {prompt}")
             
             # Run the async query using our helper method
             response = self.wrapper._run_async(self._query_claude_code(prompt, options))
