@@ -1,0 +1,816 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt_metal_api_reference>
+  <metadata>
+    <repo_path_variable>$TT_METAL_HOME</repo_path_variable>
+    <repo_path_note>Replace $TT_METAL_HOME with your actual TT-Metal installation path</repo_path_note>
+    <common_paths>
+      <path>~/work/tt-metal</path>
+      <path>/opt/tt-metal</path>
+      <path>/usr/local/tt-metal</path>
+      <path>/home/user/tt-metal</path>
+    </common_paths>
+    <version>latest</version>
+    <generated_date>2025-07-18</generated_date>
+    <description>Comprehensive TT-Metal API reference for LLM agents</description>
+  </metadata>
+
+  <!-- PATH RESOLUTION GUIDE -->
+  <path_resolution>
+    <description>All header file paths in this document match the exact #include statements used in TT-Metal kernel code</description>
+    <instructions>
+      <step>Header paths correspond directly to #include statements</step>
+      <step>No path substitution needed - use paths as-is in your kernel code</step>
+      <step>TT-Metal build system handles the actual file resolution</step>
+    </instructions>
+    <examples>
+      <example>
+        <xml_path>compute_kernel_api/eltwise_unary/exp.h</xml_path>
+        <include_statement>#include "compute_kernel_api/eltwise_unary/exp.h"</include_statement>
+        <actual_file_locations>
+          <path>$TT_METAL_HOME/tt_metal/include/compute_kernel_api/eltwise_unary/exp.h</path>
+        </actual_file_locations>
+      </example>
+      <example>
+        <xml_path>dataflow_api.h</xml_path>
+        <include_statement>#include "dataflow_api.h"</include_statement>
+        <actual_file_locations>
+          <path>$TT_METAL_HOME/tt_metal/hw/inc/dataflow_api.h</path>
+        </actual_file_locations>
+      </example>
+    </examples>
+    <validation>
+      <step>Verify your TT-Metal installation can find the headers using the include paths</step>
+      <step>Test compilation with a simple kernel using the header paths</step>
+    </validation>
+  </path_resolution>
+
+  <!-- SCHEMA DEFINITION -->
+  <schema_documentation>
+    <element name="api_category">
+      <description>Groups related API functions by purpose (compute, data_movement, sfpu, etc.)</description>
+      <attributes>
+        <attribute name="type" values="compute|data_movement|sfpu_unary|sfpu_binary|debug|utility"/>
+        <attribute name="kernel_type" values="compute|reader|writer|all"/>
+      </attributes>
+    </element>
+    
+    <element name="function">
+      <description>Individual API function with complete usage information</description>
+      <required_children>name, header_file, namespace, signature, parameters, description, usage_pattern</required_children>
+      <optional_children>init_function, common_errors, example, related_functions</optional_children>
+    </element>
+    
+    <element name="parameter">
+      <description>Function parameter with type and validation info</description>
+      <attributes>
+        <attribute name="type" description="C++ type of parameter"/>
+        <attribute name="required" values="true|false"/>
+        <attribute name="default" description="Default value if optional"/>
+      </attributes>
+    </element>
+  </schema_documentation>
+
+  <!-- COMPUTE KERNEL APIs -->
+  <api_category type="compute" kernel_type="compute">
+    <name>Compute Kernel Core Operations</name>
+    <description>Core compute kernel operations for tile management and processing</description>
+    
+    <function>
+      <name>tile_regs_acquire</name>
+      <header_file>compute_kernel_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void tile_regs_acquire()</signature>
+      <parameters></parameters>
+      <description>Acquire tile registers for computation. Must be called before any tile operations.</description>
+      <usage_pattern>
+        <step>1. Call tile_regs_acquire()</step>
+        <step>2. Perform tile operations (copy_tile, SFPU ops, etc.)</step>
+        <step>3. Call tile_regs_commit()</step>
+        <step>4. Call tile_regs_wait()</step>
+        <step>5. Call tile_regs_release()</step>
+      </usage_pattern>
+      <common_errors>
+        <error>Calling tile operations without acquire</error>
+        <error>Forgetting to call tile_regs_release()</error>
+      </common_errors>
+      <related_functions>
+        <function>tile_regs_commit</function>
+        <function>tile_regs_wait</function>
+        <function>tile_regs_release</function>
+      </related_functions>
+    </function>
+
+    <function>
+      <name>tile_regs_commit</name>
+      <header_file>compute_kernel_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void tile_regs_commit()</signature>
+      <parameters></parameters>
+      <description>Commit tile register operations. Must be called after tile operations and before pack_tile.</description>
+      <usage_pattern>
+        <step>Call after all tile operations are complete</step>
+        <step>Must be followed by tile_regs_wait()</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>tile_regs_wait</name>
+      <header_file>compute_kernel_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void tile_regs_wait()</signature>
+      <parameters></parameters>
+      <description>Wait for tile register operations to complete. Must be called after tile_regs_commit.</description>
+      <usage_pattern>
+        <step>Call after tile_regs_commit()</step>
+        <step>Call before pack_tile()</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>tile_regs_release</name>
+      <header_file>compute_kernel_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void tile_regs_release()</signature>
+      <parameters></parameters>
+      <description>Release tile registers. Must be called after pack_tile to free resources.</description>
+      <usage_pattern>
+        <step>Call after pack_tile()</step>
+        <step>Final step in tile processing sequence</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>copy_tile</name>
+      <header_file>compute_kernel_api/tile_move_copy.h</header_file>
+      <namespace>global</namespace>
+      <signature>void copy_tile(uint32_t cb_id, uint32_t tile_index, uint32_t dst_index)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">cb_id - Circular buffer ID to copy from</parameter>
+        <parameter type="uint32_t" required="true">tile_index - Index of tile in circular buffer</parameter>
+        <parameter type="uint32_t" required="true">dst_index - Destination register index (0-15)</parameter>
+      </parameters>
+      <description>Copy a tile from circular buffer to DST register for computation.</description>
+      <init_function>copy_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call copy_tile_init() once</step>
+        <step>2. Call cb_wait_front(cb_id, num_tiles)</step>
+        <step>3. Call copy_tile(cb_id, tile_index, dst_index)</step>
+      </usage_pattern>
+      <common_errors>
+        <error>Not calling copy_tile_init() first</error>
+        <error>Using dst_index > 15</error>
+        <error>Not waiting for CB data with cb_wait_front()</error>
+      </common_errors>
+    </function>
+
+    <function>
+      <name>pack_tile</name>
+      <header_file>compute_kernel_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void pack_tile(uint32_t dst_index, uint32_t cb_id)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">dst_index - Source DST register index (0-15)</parameter>
+        <parameter type="uint32_t" required="true">cb_id - Destination circular buffer ID</parameter>
+      </parameters>
+      <description>Pack a tile from DST register to circular buffer for output.</description>
+      <usage_pattern>
+        <step>1. Call after tile_regs_wait()</step>
+        <step>2. Call cb_reserve_back(cb_id, num_tiles) before this</step>
+        <step>3. Call cb_push_back(cb_id, num_tiles) after this</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>init_sfpu</name>
+      <header_file>compute_kernel_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void init_sfpu(uint32_t input_cb_id, uint32_t output_cb_id)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">input_cb_id - Input circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">output_cb_id - Output circular buffer ID</parameter>
+      </parameters>
+      <description>Initialize SFPU for computation. Must be called before any SFPU operations.</description>
+      <usage_pattern>
+        <step>Call once at the beginning of compute kernel</step>
+        <step>Typically: init_sfpu(tt::CBIndex::c_0, tt::CBIndex::c_16)</step>
+      </usage_pattern>
+    </function>
+  </api_category>
+
+  <!-- CIRCULAR BUFFER APIs -->
+  <api_category type="data_movement" kernel_type="all">
+    <name>Circular Buffer Operations</name>
+    <description>Circular buffer management for data flow between kernels</description>
+
+    <function>
+      <name>cb_wait_front</name>
+      <header_file>dataflow_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void cb_wait_front(uint32_t cb_id, uint32_t num_tiles)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">cb_id - Circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">num_tiles - Number of tiles to wait for</parameter>
+      </parameters>
+      <description>Wait for specified number of tiles to be available in circular buffer front.</description>
+      <usage_pattern>
+        <step>Call before reading from circular buffer</step>
+        <step>Must be paired with cb_pop_front()</step>
+      </usage_pattern>
+      <common_errors>
+        <error>Not matching cb_wait_front() with cb_pop_front()</error>
+        <error>Waiting for more tiles than CB can hold</error>
+      </common_errors>
+    </function>
+
+    <function>
+      <name>cb_pop_front</name>
+      <header_file>dataflow_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void cb_pop_front(uint32_t cb_id, uint32_t num_tiles)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">cb_id - Circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">num_tiles - Number of tiles to pop</parameter>
+      </parameters>
+      <description>Remove tiles from circular buffer front after processing.</description>
+      <usage_pattern>
+        <step>Call after processing tiles from cb_wait_front()</step>
+        <step>num_tiles should match cb_wait_front() call</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>cb_reserve_back</name>
+      <header_file>dataflow_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void cb_reserve_back(uint32_t cb_id, uint32_t num_tiles)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">cb_id - Circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">num_tiles - Number of tiles to reserve</parameter>
+      </parameters>
+      <description>Reserve space in circular buffer back for writing tiles.</description>
+      <usage_pattern>
+        <step>Call before writing tiles to circular buffer</step>
+        <step>Must be paired with cb_push_back()</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>cb_push_back</name>
+      <header_file>dataflow_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>void cb_push_back(uint32_t cb_id, uint32_t num_tiles)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">cb_id - Circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">num_tiles - Number of tiles to push</parameter>
+      </parameters>
+      <description>Make reserved tiles available in circular buffer after writing.</description>
+      <usage_pattern>
+        <step>Call after writing tiles to reserved space</step>
+        <step>num_tiles should match cb_reserve_back() call</step>
+      </usage_pattern>
+    </function>
+  </api_category>
+
+  <!-- SFPU UNARY OPERATIONS -->
+  <api_category type="sfpu_unary" kernel_type="compute">
+    <name>SFPU Unary Operations</name>
+    <description>Single-input special function processing unit operations</description>
+
+    <function>
+      <name>exp_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/exp.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void exp_tile(uint32_t idst, int vector_mode = (int)VectorMode::RC, uint16_t scale = p_sfpu::kCONST_1_FP16B)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+        <parameter type="int" required="false" default="(int)VectorMode::RC">vector_mode - Vector mode for computation</parameter>
+        <parameter type="uint16_t" required="false" default="p_sfpu::kCONST_1_FP16B">scale - Scale factor</parameter>
+      </parameters>
+      <description>Compute exponential function e^x on tile in DST register.</description>
+      <init_function>exp_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::exp_tile_init() once</step>
+        <step>2. Call ckernel::exp_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+      <template_parameters>
+        <parameter name="approx" type="bool" default="false">Enable approximate mode</parameter>
+        <parameter name="fast_and_approx" type="bool" default="true">Enable fast approximation if approx=true</parameter>
+        <parameter name="scale" type="uint32_t" default="0x3F800000">Scale parameter for approximation</parameter>
+      </template_parameters>
+      <common_errors>
+        <error>Not calling exp_tile_init() first</error>
+        <error>Missing ckernel:: namespace prefix</error>
+      </common_errors>
+      <example>
+        <code>
+ckernel::exp_tile_init();
+ckernel::exp_tile(0);  // Compute e^x on DST register 0
+        </code>
+      </example>
+    </function>
+
+    <function>
+      <name>negative_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/negative.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void negative_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute negation -x on tile in DST register.</description>
+      <init_function>negative_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::negative_tile_init() once</step>
+        <step>2. Call ckernel::negative_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+      <example>
+        <code>
+ckernel::negative_tile_init();
+ckernel::negative_tile(1);  // Compute -x on DST register 1
+        </code>
+      </example>
+    </function>
+
+    <function>
+      <name>mul_unary_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/binop_with_scalar.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void mul_unary_tile(uint32_t idst, uint32_t param1)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+        <parameter type="uint32_t" required="true">param1 - Scalar value in IEEE 754 float32 format</parameter>
+      </parameters>
+      <description>Multiply tile by scalar constant. Commonly used for scaling operations.</description>
+      <init_function>binop_with_scalar_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::binop_with_scalar_tile_init() once</step>
+        <step>2. Call ckernel::mul_unary_tile(dst_reg_idx, scalar_value)</step>
+      </usage_pattern>
+      <common_errors>
+        <error>Using incorrect scalar format (must be IEEE 754 float32)</error>
+        <error>Not calling binop_with_scalar_tile_init() first</error>
+      </common_errors>
+      <example>
+        <code>
+ckernel::binop_with_scalar_tile_init();
+ckernel::mul_unary_tile(0, 0x3F000000);  // Multiply by 0.5
+        </code>
+      </example>
+      <scalar_constants>
+        <constant name="0.5" value="0x3F000000"/>
+        <constant name="1.0" value="0x3F800000"/>
+        <constant name="2.0" value="0x40000000"/>
+      </scalar_constants>
+    </function>
+
+    <function>
+      <name>relu_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/relu.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void relu_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute ReLU activation function max(0, x) on tile.</description>
+      <init_function>relu_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::relu_tile_init() once</step>
+        <step>2. Call ckernel::relu_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>sigmoid_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/sigmoid.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void sigmoid_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute sigmoid activation function 1/(1+e^(-x)) on tile.</description>
+      <init_function>sigmoid_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::sigmoid_tile_init() once</step>
+        <step>2. Call ckernel::sigmoid_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>gelu_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/gelu.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void gelu_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute GELU activation function on tile.</description>
+      <init_function>gelu_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::gelu_tile_init() once</step>
+        <step>2. Call ckernel::gelu_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>sin_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/trigonometry.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void sin_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute sine function on tile.</description>
+      <init_function>sin_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::sin_tile_init() once</step>
+        <step>2. Call ckernel::sin_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>cos_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/trigonometry.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void cos_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute cosine function on tile.</description>
+      <init_function>cos_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::cos_tile_init() once</step>
+        <step>2. Call ckernel::cos_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>log_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/log.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void log_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute natural logarithm ln(x) on tile.</description>
+      <init_function>log_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::log_tile_init() once</step>
+        <step>2. Call ckernel::log_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>sqrt_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/sqrt.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void sqrt_tile(uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+      </parameters>
+      <description>Compute square root function on tile.</description>
+      <init_function>sqrt_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::sqrt_tile_init() once</step>
+        <step>2. Call ckernel::sqrt_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>recip_tile</name>
+      <header_file>compute_kernel_api/eltwise_unary/recip.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void recip_tile(uint32_t idst, int vector_mode = (int)VectorMode::RC)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst - DST register index to operate on</parameter>
+        <parameter type="int" required="false" default="(int)VectorMode::RC">vector_mode - Vector mode for computation</parameter>
+      </parameters>
+      <description>Compute reciprocal function 1/x on tile.</description>
+      <init_function>recip_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::recip_tile_init() once</step>
+        <step>2. Call ckernel::recip_tile(dst_reg_idx) for each tile</step>
+      </usage_pattern>
+    </function>
+  </api_category>
+
+  <!-- SFPU BINARY OPERATIONS -->
+  <api_category type="sfpu_binary" kernel_type="compute">
+    <name>SFPU Binary Operations</name>
+    <description>Two-input SFPU operations that work on DST registers</description>
+
+    <function>
+      <name>add_binary_tile</name>
+      <header_file>compute_kernel_api/eltwise_binary_sfpu.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void add_binary_tile(uint32_t idst0, uint32_t idst1)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst0 - First DST register index (result stored here)</parameter>
+        <parameter type="uint32_t" required="true">idst1 - Second DST register index</parameter>
+      </parameters>
+      <description>Add two tiles in DST registers. Result stored in first register.</description>
+      <init_function>add_binary_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::add_binary_tile_init() once</step>
+        <step>2. Load tiles into DST registers</step>
+        <step>3. Call ckernel::add_binary_tile(dst_reg_0, dst_reg_1)</step>
+      </usage_pattern>
+      <common_errors>
+        <error>Confusing with add_tiles() which uses circular buffers</error>
+        <error>Not calling add_binary_tile_init() first</error>
+      </common_errors>
+      <example>
+        <code>
+ckernel::add_binary_tile_init();
+// Load tiles into DST registers 0 and 1
+ckernel::add_binary_tile(0, 1);  // 0 = 0 + 1
+        </code>
+      </example>
+    </function>
+
+    <function>
+      <name>sub_binary_tile</name>
+      <header_file>compute_kernel_api/eltwise_binary_sfpu.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void sub_binary_tile(uint32_t idst0, uint32_t idst1)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst0 - First DST register index (result stored here)</parameter>
+        <parameter type="uint32_t" required="true">idst1 - Second DST register index</parameter>
+      </parameters>
+      <description>Subtract two tiles in DST registers. Result stored in first register.</description>
+      <init_function>sub_binary_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::sub_binary_tile_init() once</step>
+        <step>2. Load tiles into DST registers</step>
+        <step>3. Call ckernel::sub_binary_tile(dst_reg_0, dst_reg_1)</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>mul_binary_tile</name>
+      <header_file>compute_kernel_api/eltwise_binary_sfpu.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void mul_binary_tile(uint32_t idst0, uint32_t idst1)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst0 - First DST register index (result stored here)</parameter>
+        <parameter type="uint32_t" required="true">idst1 - Second DST register index</parameter>
+      </parameters>
+      <description>Multiply two tiles in DST registers. Result stored in first register.</description>
+      <init_function>mul_binary_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::mul_binary_tile_init() once</step>
+        <step>2. Load tiles into DST registers</step>
+        <step>3. Call ckernel::mul_binary_tile(dst_reg_0, dst_reg_1)</step>
+      </usage_pattern>
+    </function>
+  </api_category>
+
+  <!-- CIRCULAR BUFFER BASED BINARY OPERATIONS -->
+  <api_category type="compute" kernel_type="compute">
+    <name>Circular Buffer Binary Operations</name>
+    <description>Binary operations that read from circular buffers</description>
+
+    <function>
+      <name>add_tiles</name>
+      <header_file>compute_kernel_api/eltwise_binary.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void add_tiles(uint32_t icb0, uint32_t icb1, uint32_t itile0, uint32_t itile1, uint32_t idst)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">icb0 - First input circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">icb1 - Second input circular buffer ID</parameter>
+        <parameter type="uint32_t" required="true">itile0 - Tile index in first circular buffer</parameter>
+        <parameter type="uint32_t" required="true">itile1 - Tile index in second circular buffer</parameter>
+        <parameter type="uint32_t" required="true">idst - Destination DST register index</parameter>
+      </parameters>
+      <description>Add tiles from two circular buffers and store result in DST register.</description>
+      <init_function>add_tiles_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::add_tiles_init(cb_in0, cb_in1) once</step>
+        <step>2. Call cb_wait_front() for both input CBs</step>
+        <step>3. Call ckernel::add_tiles(cb_in0, cb_in1, tile_idx0, tile_idx1, dst_reg)</step>
+      </usage_pattern>
+      <common_errors>
+        <error>Confusing with add_binary_tile() which uses DST registers</error>
+        <error>Not calling cb_wait_front() for input CBs</error>
+      </common_errors>
+      <example>
+        <code>
+ckernel::add_tiles_init(tt::CBIndex::c_0, tt::CBIndex::c_1);
+cb_wait_front(tt::CBIndex::c_0, 1);
+cb_wait_front(tt::CBIndex::c_1, 1);
+ckernel::add_tiles(tt::CBIndex::c_0, tt::CBIndex::c_1, 0, 0, 0);
+        </code>
+      </example>
+    </function>
+  </api_category>
+
+  <!-- UTILITY FUNCTIONS -->
+  <api_category type="utility" kernel_type="all">
+    <name>Utility Functions</name>
+    <description>Common utility functions for kernel development</description>
+
+    <function>
+      <name>get_compile_time_arg_val</name>
+      <header_file>compute_kernel_api/common.h</header_file>
+      <namespace>global</namespace>
+      <signature>uint32_t get_compile_time_arg_val(uint32_t arg_idx)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">arg_idx - Index of compile-time argument</parameter>
+      </parameters>
+      <description>Get compile-time argument value passed to kernel.</description>
+      <usage_pattern>
+        <step>Arguments are passed when kernel is created</step>
+        <step>Typically used for loop bounds, tile counts, etc.</step>
+      </usage_pattern>
+      <example>
+        <code>
+uint32_t per_core_block_cnt = get_compile_time_arg_val(0);
+uint32_t per_core_block_dim = get_compile_time_arg_val(1);
+        </code>
+      </example>
+    </function>
+
+    <function>
+      <name>get_arg_val</name>
+      <header_file>dataflow_api.h</header_file>
+      <namespace>global</namespace>
+      <signature>T get_arg_val(uint32_t arg_idx)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">arg_idx - Index of runtime argument</parameter>
+      </parameters>
+      <description>Get runtime argument value passed to kernel.</description>
+      <usage_pattern>
+        <step>Arguments are passed when kernel is executed</step>
+        <step>Typically used for addresses, sizes, etc.</step>
+      </usage_pattern>
+      <example>
+        <code>
+uint32_t src_addr = get_arg_val&lt;uint32_t&gt;(0);
+uint32_t num_tiles = get_arg_val&lt;uint32_t&gt;(1);
+        </code>
+      </example>
+    </function>
+  </api_category>
+
+  <!-- DEBUG FUNCTIONS -->
+  <api_category type="debug" kernel_type="all">
+    <name>Debug Functions</name>
+    <description>Functions for debugging and logging in kernels</description>
+
+    <function>
+      <name>DPRINT</name>
+      <header_file>debug/dprint.h</header_file>
+      <namespace>global</namespace>
+      <signature>DPRINT &lt;&lt; expression &lt;&lt; ENDL()</signature>
+      <parameters>
+        <parameter type="various" required="true">expression - Value or string to print</parameter>
+      </parameters>
+      <description>Debug print macro for kernel debugging.</description>
+      <usage_pattern>
+        <step>Use like cout: DPRINT &lt;&lt; "message" &lt;&lt; variable &lt;&lt; ENDL()</step>
+        <step>Must end with ENDL() to flush output</step>
+      </usage_pattern>
+      <example>
+        <code>
+DPRINT &lt;&lt; "Processing tile: " &lt;&lt; tile_index &lt;&lt; ENDL();
+        </code>
+      </example>
+    </function>
+
+    <function>
+      <name>ASSERT</name>
+      <header_file>debug/assert.h</header_file>
+      <namespace>global</namespace>
+      <signature>ASSERT(condition)</signature>
+      <parameters>
+        <parameter type="bool" required="true">condition - Boolean condition to check</parameter>
+      </parameters>
+      <description>Runtime assertion for debugging.</description>
+      <usage_pattern>
+        <step>Use to check runtime conditions</step>
+        <step>Program terminates if condition is false</step>
+      </usage_pattern>
+      <example>
+        <code>
+ASSERT(dst_index &lt; 16);
+        </code>
+      </example>
+    </function>
+  </api_category>
+
+  <!-- COMMON CONSTANTS -->
+  <constants>
+    <constant name="CB_INDICES">
+      <description>Standard circular buffer indices</description>
+      <values>
+        <value name="tt::CBIndex::c_0">Input CB 0</value>
+        <value name="tt::CBIndex::c_1">Input CB 1</value>
+        <value name="tt::CBIndex::c_16">Output CB 16</value>
+        <value name="tt::CBIndex::c_17">Output CB 17</value>
+      </values>
+    </constant>
+    
+    <constant name="FLOAT32_CONSTANTS">
+      <description>Common scalar values in IEEE 754 float32 format</description>
+      <values>
+        <value name="0x3F000000">0.5</value>
+        <value name="0x3F800000">1.0</value>
+        <value name="0x40000000">2.0</value>
+        <value name="0x40400000">3.0</value>
+        <value name="0x00000000">0.0</value>
+      </values>
+    </constant>
+  </constants>
+
+  <!-- COMMON USAGE PATTERNS -->
+  <usage_patterns>
+    <pattern name="basic_compute_kernel">
+      <description>Standard compute kernel structure</description>
+      <code>
+#include "compute_kernel_api.h"
+#include "compute_kernel_api/eltwise_unary/exp.h"
+
+namespace NAMESPACE {
+void MAIN {
+    uint32_t per_core_block_cnt = get_compile_time_arg_val(0);
+    uint32_t per_core_block_dim = get_compile_time_arg_val(1);
+    
+    init_sfpu(tt::CBIndex::c_0, tt::CBIndex::c_16);
+    ckernel::exp_tile_init();
+    
+    for (uint32_t block = 0; block &lt; per_core_block_cnt; block++) {
+        cb_reserve_back(tt::CBIndex::c_16, per_core_block_dim);
+        
+        for (uint32_t tile = 0; tile &lt; per_core_block_dim; tile++) {
+            tile_regs_acquire();
+            
+            cb_wait_front(tt::CBIndex::c_0, 1);
+            copy_tile(tt::CBIndex::c_0, 0, 0);
+            
+            ckernel::exp_tile(0);
+            
+            tile_regs_commit();
+            tile_regs_wait();
+            pack_tile(0, tt::CBIndex::c_16);
+            
+            cb_pop_front(tt::CBIndex::c_0, 1);
+            tile_regs_release();
+        }
+        
+        cb_push_back(tt::CBIndex::c_16, per_core_block_dim);
+    }
+}
+}
+      </code>
+    </pattern>
+    
+    <pattern name="cosh_implementation">
+      <description>Hyperbolic cosine implementation using SFPU</description>
+      <code>
+#include "compute_kernel_api.h"
+#include "compute_kernel_api/eltwise_unary/exp.h"
+#include "compute_kernel_api/eltwise_unary/negative.h"
+#include "compute_kernel_api/eltwise_binary_sfpu.h"
+#include "compute_kernel_api/eltwise_unary/binop_with_scalar.h"
+
+namespace NAMESPACE {
+void MAIN {
+    // Initialize SFPU operations
+    init_sfpu(tt::CBIndex::c_0, tt::CBIndex::c_16);
+    ckernel::exp_tile_init();
+    ckernel::negative_tile_init();
+    ckernel::add_binary_tile_init();
+    ckernel::binop_with_scalar_tile_init();
+    
+    // Process tiles
+    tile_regs_acquire();
+    
+    // Load x into DST register 0
+    copy_tile(tt::CBIndex::c_0, 0, 0);
+    
+    // Compute e^x (store in DST register 0)
+    ckernel::exp_tile(0);
+    
+    // Load x into DST register 1 and negate
+    copy_tile(tt::CBIndex::c_0, 0, 1);
+    ckernel::negative_tile(1);
+    
+    // Compute e^(-x) (store in DST register 1)
+    ckernel::exp_tile(1);
+    
+    // Add e^x + e^(-x) (store in DST register 0)
+    ckernel::add_binary_tile(0, 1);
+    
+    // Divide by 2 (multiply by 0.5)
+    ckernel::mul_unary_tile(0, 0x3F000000);
+    
+    // Pack result
+    tile_regs_commit();
+    tile_regs_wait();
+    pack_tile(0, tt::CBIndex::c_16);
+    tile_regs_release();
+}
+}
+      </code>
+    </pattern>
+  </usage_patterns>
+</tt_metal_api_reference>
