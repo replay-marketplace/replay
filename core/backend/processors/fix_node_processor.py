@@ -26,7 +26,8 @@ class FixNodeProcessor:
     """Processes FIX nodes by analyzing run logs and applying fixes to code."""
     
     # Configuration constants
-    DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
+    # DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
+    DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
     DEFAULT_MAX_TOKENS = 10000
     LAST_N_ERROR_LINES = 100
     CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt" #"client_instructions_indentify_issue.txt"
@@ -57,8 +58,8 @@ class FixNodeProcessor:
             
             # Extract run logs from the RUN node
             stderr_file, stdout_file = self._extract_run_log_files(run_node, replay)
-            stderr_file_content = self._load_files_from_directory([stdout_file], replay.run_logs_dir, "run log file", last_n_lines=self.LAST_N_ERROR_LINES)
-            run_logs_files = self._load_files_from_directory([stderr_file], replay.run_logs_dir, "stderr file", last_n_lines=self.LAST_N_ERROR_LINES)
+            stderr_file_content = self._load_files_from_directory([f for f in [stdout_file] if f is not None], replay.run_logs_dir, "run log file", last_n_lines=self.LAST_N_ERROR_LINES)
+            run_logs_files = self._load_files_from_directory([f for f in [stderr_file] if f is not None], replay.run_logs_dir, "stderr file", last_n_lines=self.LAST_N_ERROR_LINES)
             logger.debug(f"Found attached run logs files: {run_logs_files}")
 
             # Get relevant code files mentioned in the logs
@@ -134,6 +135,7 @@ class FixNodeProcessor:
         files = []
         
         for file_ref in file_refs:
+            logger.info(f"Loading from {base_dir} / {file_ref}")
             file_path = os.path.join(base_dir, file_ref)
             
             if os.path.exists(file_path):
