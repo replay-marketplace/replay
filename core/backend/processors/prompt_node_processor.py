@@ -25,8 +25,8 @@ class PromptNodeProcessor:
     """Processes PROMPT nodes by sending prompts to LLM and handling responses."""
     
     # Configuration constants
-    #DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
-    DEFAULT_MODEL = "claude-sonnet-4-20250514"
+    # DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+    DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
     DEFAULT_MAX_TOKENS = 10000
     CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt"
     
