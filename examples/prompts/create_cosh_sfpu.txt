@@ -27,5 +27,7 @@ Update @code:test_newop.py to compare against torch COSH
 Reference the lowering from @code:test_lowered_cosh.py and implement the operation in @code:tt_eltwise_sfpu2.cpp
 @docs:kernel_api_sfpu.md
 @docs:host_api_py.md
+@docs:tt-metal-kernel-apis.md
+@docs:tt-metal-api-reference.xml
 
 /DEBUG_LOOP @command:"python3 test_newop.py"
