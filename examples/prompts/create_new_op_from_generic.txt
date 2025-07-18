@@ -2,7 +2,7 @@
 /DOCS docs/
 
 /PROMPT 
-Update @code:tt_eltwise_sfpu.cpp to implement acos operation instead of exp
+Update @code:tt_eltwise_sfpu2.cpp to implement acos operation instead of exp
 Update @code:test_newop.py to compare against ttnn.acos instead of exp
 
 Reference @docs:kernel_api_compute_operations.md for API Reference
