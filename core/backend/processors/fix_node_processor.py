@@ -66,13 +66,31 @@ class FixNodeProcessor:
             # Use stderr for error analysis, but could be enhanced to use both
             log_file_for_analysis = stderr_file if stderr_file else stdout_file            
             relevant_code_files_contents = []
+            ro_files = [
+                "kernel_api_compute_operations.md",
+                "kernel_api_circular_buffers.md",
+                "example_compute_llk_where.cpp",
+                "tt-metal-kernel-apis.md",
+                "tt-metal-api-reference.xml",
+            ]
             if log_file_for_analysis:
                 relevant_code_files = self._get_relevant_code_files(log_file_for_analysis, replay)
                 relevant_code_files_contents = self._load_files_from_directory(relevant_code_files, replay.code_dir, "code file")            
+
+                # strip writer, reader, lowered files from editable files
+                strip_files = ["tt_writer.cpp", "tt_reader.cpp", "test_lowered_{}.py"]
+                pop_idxs = []
+                for i, ref in enumerate(relevant_code_files_contents):
+                    if ref.path in strip_files or ref.path.startswith('test_lowered'):
+                        ro_files.append(relevant_code_files_contents[i].path)
+                        pop_idxs.append(i)
+
+                relevant_code_files_contents = [relevant_code_files_contents[i] for i in range(len(relevant_code_files_contents)) if i not in pop_idxs]
+
                 
 
             # Build and send LLM request
-            llm_request = self._build_llm_request(run_logs_files, relevant_code_files_contents, replay)
+            llm_request = self._build_llm_request(run_logs_files, relevant_code_files_contents, ro_files, replay)
             response_data = self._send_llm_request(replay, llm_request)
             
             # Apply fixes based on LLM response
@@ -150,19 +168,18 @@ class FixNodeProcessor:
         
         return files
 
-    def _build_llm_request(self, run_logs_files: List[FileReference], code_files: List[FileReference], replay) -> LLMRequest:
+    def _build_llm_request(self, run_logs_files: List[FileReference], code_files: List[FileReference], ro_files: List[FileReference], replay) -> LLMRequest:
         """Build the LLM request for analysis."""
         prompt = """
         Review the error logs and suggest fixes for the code files. 
         Don't create new files. Don't make any drastic changes. 
         Carefully review memory, it may contain useful information.
-        For wrong includes and api calls, request a "commands_to_run" get_api_reference(<api_name|or_header_name>) to get the correct API reference and examples.
         """
         
         return LLMRequest(
             prompt=prompt,
             code_to_edit=code_files,
-            read_only_files=[], # need to pickup read only files from all the prompts before the test run??? 🤔
+            read_only_files=ro_files, # need to pickup read only files from all the prompts before the test run??? 🤔
             run_logs_files=run_logs_files,
             memory=replay.state.execution.memory # use memory from replay state
         )
@@ -181,6 +198,7 @@ class FixNodeProcessor:
             "run_logs_files": [f.path for f in llm_request.run_logs_files],
             # "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
             "code_to_edit": [f.path for f in llm_request.code_to_edit],
+            "read_only_files": llm_request.read_only_files, # [f.path for f in llm_request.read_only_files],
             "memory": llm_request.memory
         }
         request_json = json.dumps(request_dict, indent=2)
@@ -235,15 +253,15 @@ sfpi::vFloat one = sfpi::vFloat(1.0f);  // Convert to vFloat first
             replay.state.execution.memory = response_data['memory']
             logger.info(f"🧠 Updated memory: \n{replay.state.execution.memory}")
 
-        if 'commands_to_run' in response_data:
-            logger.info(f"Commands to run: {response_data['commands_to_run']}")
-            commands_to_run = response_data['commands_to_run']
-            for command in commands_to_run:
-                if command.startswith('get_api_reference'):
-                    api_name = command.split('(')[1].split(')')[0]
-                    api_reference = self._get_mock_api_reference(api_name)
-                    replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)                    
-                    logger.info(f"✨✨✨ Tool is used. Added a reference to memory: {api_reference}")
+        # if 'commands_to_run' in response_data:
+        #     logger.info(f"Commands to run: {response_data['commands_to_run']}")
+        #     commands_to_run = response_data['commands_to_run']
+        #     for command in commands_to_run:
+        #         if command.startswith('get_api_reference'):
+        #             api_name = command.split('(')[1].split(')')[0]
+        #             api_reference = self._get_mock_api_reference(api_name)
+        #             replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)                    
+        #             logger.info(f"✨✨✨ Tool is used. Added a reference to memory: {api_reference}")
 
     def _save_generated_file(self, file_path: str, content: str, code_dir: str) -> None:
         """Save a generated file to the code directory."""

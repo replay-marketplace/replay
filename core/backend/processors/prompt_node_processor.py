@@ -158,9 +158,12 @@ class PromptNodeProcessor:
             raise FileNotFoundError(f"Client instructions file not found: {instructions_path}")
 
     def _extract_json(self, response):
-        json_start = response.index("{")
-        json_end = response.rfind("}")
-        return json.loads(response[json_start:json_end + 1])
+        try:
+            json_start = response.index("{")
+            json_end = response.rfind("}")
+            return json.loads(response[json_start:json_end + 1])
+        except:
+            return {}
 
     def _send_generic_llm_request(self, replay, node_data: Dict[str, Any], llm_request: LLMRequest) -> Dict[str, Any]:
         """Send the LLM request and return the parsed response."""
