@@ -4,8 +4,7 @@ Dont include the word json before and after with the apostrophies in your respon
 Reply with JUST the json. 
 You can edit files in "code_to_edit", and you can use the knowledge from "read_only_files".
 If I ask you to generate any commands to be run in the terminal based on the code, 
-put the commands in the "commands_to_run" field; use python3.
-You don't need to make new directories for files you generate, they will automatically get created. 
+you are free to do so.
 Keep in mind "memory" records from previous interactions.
 Append concise summary of your response to the "memory" array. 
 Do not remove items from the memory without being explicitly asked to do so.
