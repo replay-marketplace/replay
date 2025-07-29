@@ -49,11 +49,11 @@ test = [
 [project.scripts]
 replay = "replay:main"
 
+[tool.setuptools]
+py-modules = ["replay"]
+
 [tool.setuptools.packages.find]
 where = ["."]
-
-[tool.setuptools.py-modules]
-py-modules = ["replay"]
 
 [tool.setuptools.package-data]
 "*" = ["*.txt", "*.json", "*.md"]
