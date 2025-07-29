@@ -448,18 +448,23 @@ class Replay:
             raise RuntimeError("System instructions file not found in session replay folder.")
 
     def _copy_system_instructions(self):
-        src_instructions_dir = "core/backend/system_prompts/"
+        import pkg_resources
         src_instructions = ["client_instructions_with_json.txt",
                             "client_instructions_indentify_issue.txt"]
         dst_instructions = os.path.join(self.replay_dir)        
         for src_instruction in src_instructions:
-            src_instruction_path = os.path.join(src_instructions_dir, src_instruction)
+            # Use pkg_resources to find the file within the installed package
+            resource_path = f"core/backend/system_prompts/{src_instruction}"
             dst_instruction = os.path.join(self.replay_dir, src_instruction)
-            if os.path.exists(src_instruction_path):
-                import shutil
-                shutil.copy(src_instruction_path, dst_instruction)
-            else:
-                raise RuntimeError(f"System instructions file not found in {src_instruction_path}")
+            
+            try:
+                # Read the resource content
+                content = pkg_resources.resource_string("core", f"backend/system_prompts/{src_instruction}")
+                # Write to destination
+                with open(dst_instruction, 'wb') as f:
+                    f.write(content)
+            except Exception as e:
+                raise RuntimeError(f"System instructions file not found: {resource_path}. Error: {e}")
 
     def _setup_directories(self):
         # Set up all relevant directories for this version
