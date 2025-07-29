@@ -52,6 +52,9 @@ replay = "replay:main"
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.setuptools.py-modules]
+replay = "replay"
+
 [tool.setuptools.package-data]
 "*" = ["*.txt", "*.json", "*.md"]
 
