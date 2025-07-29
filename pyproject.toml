@@ -53,7 +53,7 @@ replay = "replay:main"
 where = ["."]
 
 [tool.setuptools.py-modules]
-replay = "replay"
+replay
 
 [tool.setuptools.package-data]
 "*" = ["*.txt", "*.json", "*.md"]
