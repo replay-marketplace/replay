@@ -1,0 +1,42 @@
+/TEMPLATE templates/ttnn/newop_generic
+/DOCS docs/
+
+/PROMPT 
+We are creating a compute kernel for {{OP_NAME}} function.
+* Think how to lower {{OP_NAME}} into a set of more primitive operations 
+* Think step by step, how many intermediate variables must be kept at any time?
+Write the chain as a test into a new file called "test_lowered_{{OP_NAME}}.py", compare to torch
+Each line should be no more than 1 primitive operation
+Instead of using any functions from the math module, use their counterparts from torch.
+
+<lowering>
+atanh(x)
+
+a = 1 + x     # 1 temp
+b = 1 - x     # 2 temp
+c = b / x     # 1 temp
+d = log(c)    # 1 temp
+return d / 2
+
+</lowering>
+
+/DEBUG_LOOP @command:"python3 test_lowered_{{OP_NAME}}.py"
+
+/PROMPT
+Update @code:test_newop.py to compare against torch {{OP_NAME}}
+Make sure to declare any additional CBs you need in @code:test_newop.py prepare_newop_program function - this makes sure you can access them inside the kernel later
+For now, ensure the comparison fails - this is ok because the kernel currently calculates a different function. We will worry about the kernel later. Make sure the updated test_newop.py compares the kernel result to {{OP_NAME}} from torch. In order to pass onto the next step, the newly edited test must assert that the resulting tensors are the same, so it exits with code 1 when executed.
+Make sure the inputs used for testing equality are within the valid range for {{OP_NAME}}
+
+/DEBUG_LOOP @command:"timeout 30 python3 test_newop.py" @should_fail
+
+
+/PROMPT
+Reference the lowering from @code:test_lowered_atanh.py to see what operations to convert to LLK calls in @code:tt_eltwise_sfpu2.cpp. Be careful with operation ordering because init calls modify state by writing readonly constants to memory - this means they must be called before their corresponding LLK functions with no other init calls in between. To pass this step, your eltwise kernel should account for all steps of the lowering.
+@docs:kernel_api_compute_operations.md
+@docs:kernel_api_circular_buffers.md
+@docs:example_compute_llk_where.cpp
+@docs:tt-metal-kernel-apis.md
+@docs:tt-metal-api-reference.xml
+
+/DEBUG_LOOP @command:"timeout 30 python3 test_newop.py"
