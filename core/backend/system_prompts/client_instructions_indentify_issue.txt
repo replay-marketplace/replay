@@ -10,7 +10,7 @@ You Return a JSON array of objects with this format:
   "suggested_fix": "specific actionable solution"
 }
 
-Focus on compilation errors like missing includes, undefined functions, type mismatches, and syntax errors. 
+Focus on compilation errors like missing includes, undefined functions, type mismatches, and syntax errors. Refer to documentation to correct incorrect includes, and remove include statements if the files do not exist.
 If no errors found, return empty array [].
 
 <example1>
