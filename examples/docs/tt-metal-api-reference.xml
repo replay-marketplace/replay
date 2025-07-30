@@ -445,7 +445,7 @@ ckernel::mul_unary_tile(0, 0x3F000000);  // Multiply by 0.5
 
     <function>
       <name>log_tile</name>
-      <header_file>compute_kernel_api/eltwise_unary/log.h</header_file>
+      <header_file>compute_kernel_api.h</header_file>
       <namespace>ckernel</namespace>
       <signature>void log_tile(uint32_t idst)</signature>
       <parameters>
@@ -560,6 +560,24 @@ ckernel::add_binary_tile(0, 1);  // 0 = 0 + 1
         <step>1. Call ckernel::mul_binary_tile_init() once</step>
         <step>2. Load tiles into DST registers</step>
         <step>3. Call ckernel::mul_binary_tile(dst_reg_0, dst_reg_1)</step>
+      </usage_pattern>
+    </function>
+
+    <function>
+      <name>div_binary_tile</name>
+      <header_file>compute_kernel_api/eltwise_binary_sfpu.h</header_file>
+      <namespace>ckernel</namespace>
+      <signature>void div_binary_tile(uint32_t idst0, uint32_t idst1)</signature>
+      <parameters>
+        <parameter type="uint32_t" required="true">idst0 - First DST register index (result stored here)</parameter>
+        <parameter type="uint32_t" required="true">idst1 - Second DST register index</parameter>
+      </parameters>
+      <description>Divide two tiles in DST registers. Result stored in first register.</description>
+      <init_function>div_binary_tile_init</init_function>
+      <usage_pattern>
+        <step>1. Call ckernel::div_binary_tile_init() once</step>
+        <step>2. Load tiles into DST registers</step>
+        <step>3. Call ckernel::div_binary_tile(dst_reg_0, dst_reg_1)</step>
       </usage_pattern>
     </function>
   </api_category>

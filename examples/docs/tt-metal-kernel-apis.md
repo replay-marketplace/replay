@@ -46,7 +46,7 @@ void MAIN { /* uses tile operations, SFPU */ }
 |--------|-----------|---------------|
 | `eltwise_unary/exp.h` | `exp_tile()`, `exp_tile_init()` | Missing ckernel:: namespace |
 | `eltwise_unary/negative.h` | `negative_tile()`, `negative_tile_init()` | Not calling init function |
-| `eltwise_binary_sfpu.h` | `add_binary_tile()`, `mul_binary_tile()` | Using wrong add_tiles function |
+| `eltwise_binary_sfpu.h` | `add_binary_tile()`, `mul_binary_tile()`, `div_binary_tile()`, `sub_binary_tile()`  | Using wrong add_tiles function |
 | `eltwise_unary/binop_with_scalar.h` | `mul_unary_tile()`, `div_unary_tile()` | Wrong scalar format |
 | `eltwise_binary.h` | `add_tiles()`, `sub_tiles()` | CB-based, not DST register |
 
@@ -61,7 +61,7 @@ void MAIN { /* uses tile operations, SFPU */ }
 ckernel::exp_tile_init();
 ckernel::exp_tile(dst_reg_idx);
 
-#include "compute_kernel_api/eltwise_unary/log.h"
+#include "compute_kernel_api.h"
 ckernel::log_tile_init();
 ckernel::log_tile(dst_reg_idx);
 
@@ -71,6 +71,11 @@ ckernel::sin_tile_init();
 ckernel::sin_tile(dst_reg_idx);
 ckernel::cos_tile(dst_reg_idx);
 ckernel::tan_tile(dst_reg_idx);
+
+// OTHER
+#include "compute_kernel_api/eltwise_unary/recip.h"
+ckernel::recip_init();
+ckernel::recip(dst_reg_idx);
 ```
 
 ### ACTIVATION FUNCTIONS
@@ -110,6 +115,12 @@ ckernel::add_tiles(cb_in0, cb_in1, tile_idx_0, tile_idx_1, dst_reg_idx);
 ckernel::binop_with_scalar_tile_init();
 ckernel::mul_unary_tile(dst_reg_idx, 0x3F000000);  // Multiply by 0.5
 ckernel::div_unary_tile(dst_reg_idx, 0x40000000);  // Divide by 2.0
+ckernel::add_unary_tile(dst_reg_idx, 0x40000000);  // Add 2.0
+ckernel::sub_unary_tile(dst_reg_idx, 0x40000000);  // Subtract 2.0 from input
+
+// REVERSE SUB
+#include "compute_kernel_api/eltwise_unary/reverseops.h"
+ckernel::rsub_tile(dst_reg_idx, 0x40000000); // Subtract input from 2.0
 ```
 
 ---
