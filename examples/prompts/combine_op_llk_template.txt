@@ -32,7 +32,7 @@ Make sure the inputs used for testing equality are within the valid range for {{
 
 
 /PROMPT
-Reference the lowering from @code:test_lowered_atanh.py to see what operations to convert to LLK calls in @code:tt_eltwise_sfpu2.cpp. Be careful with operation ordering because init calls modify state by writing readonly constants to memory - this means they must be called before their corresponding LLK functions with no other init calls in between. To pass this step, your eltwise kernel should account for all steps of the lowering.
+Reference the lowering from @code:test_lowered_{{OP_NAME}}.py to see what operations to convert to LLK calls in @code:tt_eltwise_sfpu2.cpp. Be careful with operation ordering because init calls modify state by writing readonly constants to memory - this means they must be called before their corresponding LLK functions with no other init calls in between. To pass this step, your eltwise kernel should account for all steps of the lowering.
 @docs:kernel_api_compute_operations.md
 @docs:kernel_api_circular_buffers.md
 @docs:example_compute_llk_where.cpp

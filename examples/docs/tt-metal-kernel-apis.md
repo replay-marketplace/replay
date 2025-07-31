@@ -64,6 +64,10 @@ ckernel::exp_tile(dst_reg_idx);
 #include "compute_kernel_api.h"
 ckernel::log_tile_init();
 ckernel::log_tile(dst_reg_idx);
+ckernel::abs_tile_init();
+ckernel::abs_tile(dst_reg_idx);
+ckernel::sign_tile_init();
+ckernel::sign_tile(dst_reg_idx);
 
 // TRIGONOMETRIC
 #include "compute_kernel_api/eltwise_unary/trigonometry.h"
@@ -103,6 +107,12 @@ ckernel::sigmoid_tile(dst_reg_idx);
 ckernel::add_binary_tile_init();
 ckernel::add_binary_tile(dst_reg_0, dst_reg_1);  // Result in dst_reg_0
 
+#include "compute_kernel_api/binary_max_min.h"
+ckernel::binary_min_tile_init();
+ckernel::binary_min_tile(dst_reg_0, dst_reg_1); // Result in dst_reg_0
+ckernel::binary_max_tile_init();
+ckernel::binary_max_tile(dst_reg_0, dst_reg_1); // Result in dst_reg_0
+
 // CIRCULAR BUFFER OPERATIONS
 #include "compute_kernel_api/eltwise_binary.h"
 ckernel::add_tiles_init(cb_in0, cb_in1);
@@ -121,6 +131,13 @@ ckernel::sub_unary_tile(dst_reg_idx, 0x40000000);  // Subtract 2.0 from input
 // REVERSE SUB
 #include "compute_kernel_api/eltwise_unary/reverseops.h"
 ckernel::rsub_tile(dst_reg_idx, 0x40000000); // Subtract input from 2.0
+
+// MAX AND MIN
+#include "compute_kernel_api.h"
+ckernel::unary_min_tile_init();
+ckernel::unary_min_tile(dst_reg_idx, 0x3F000000); // Eltwise min of input and 0.5
+ckernel::unary_max_tile_init();
+ckernel::unary_max_tile(dst_reg_idx, 0x3F000000); // Eltwise max of input and 0.5
 ```
 
 ---
