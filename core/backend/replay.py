@@ -118,6 +118,16 @@ class Replay:
         if self.state.status not in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
             self.status = ReplayStatus.INITIALIZED
 
+        # Initialize MCP manager
+        self.mcp_manager = None
+        if not use_mock:
+            from core.backend.mcp_manager import MCPManager
+            self.mcp_manager = MCPManager()            
+            try:
+                self.mcp_manager.ensure_tt_metal_tools()
+            except Exception as e:
+                logger.warning(f"Could not set up TT-Metal MCP tools: {e}")
+
 
     @classmethod
     def from_recipe(

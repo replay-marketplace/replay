@@ -76,32 +76,14 @@ class ClaudeCodeClientWrapper:
     
     def _run_async(self, coro):
         """Run an async coroutine in a synchronous context."""
+        # Always create a new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            # Try to get the current event loop
-            loop = asyncio.get_running_loop()
-            # If we're already in an event loop, we need to run in a thread
-            import concurrent.futures
-            import threading
-            
-            def run_in_thread():
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-                try:
-                    return new_loop.run_until_complete(coro)
-                finally:
-                    new_loop.close()
-            
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(run_in_thread)
-                return future.result()
-        except RuntimeError:
-            # No event loop running, we can create one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                return loop.run_until_complete(coro)
-            finally:
-                loop.close()
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
     
     class MessagesWrapper:
         """Wrapper to provide compatibility with the standard Anthropic client interface."""
