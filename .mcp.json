@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tt-metal-tools": {
+      "command": "tt-metal-mcp",
+      "cwd": "/home/user/tt-metal/replay/tools/api_database_tools"
+    }
+  }
+}

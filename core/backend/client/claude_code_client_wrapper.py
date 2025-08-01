@@ -5,7 +5,7 @@ import asyncio
 from datetime import datetime
 from typing import Any, Dict, List, Optional, AsyncIterator
 from claude_code_sdk import query, ClaudeCodeOptions, UserMessage, AssistantMessage, SystemMessage, ResultMessage, TextBlock
-from claude_code_sdk.types import PermissionMode
+from claude_code_sdk.types import PermissionMode, McpStdioServerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +16,10 @@ class ClaudeCodeClientWrapper:
     Handles async operations internally to provide a synchronous interface.
     """
     
-    def __init__(self, version_dir: str, claude_config=None):
+    def __init__(self, version_dir: str, claude_config=None, disabled_tools=None):
         self.version_dir = version_dir
         self.claude_config = claude_config
+        self.disabled_tools = disabled_tools or []
         self.client_dir = os.path.join(version_dir, "client")
         self.request_counter = 0
         self.session_id = None
@@ -27,6 +28,62 @@ class ClaudeCodeClientWrapper:
         # Create client directory if it doesn't exist
         os.makedirs(self.client_dir, exist_ok=True)
         logger.info(f"Claude Code client wrapper initialized. Saving requests/responses to: {self.client_dir}")
+    
+    def _load_mcp_config(self) -> Dict[str, McpStdioServerConfig]:
+        """Load MCP server configuration from .mcp.json file."""
+        mcp_servers = {}
+        
+        # Look for .mcp.json in current directory and project root
+        search_paths = [
+            os.path.join(os.getcwd(), ".mcp.json"),
+            os.path.join(os.path.dirname(self.version_dir), ".mcp.json"),
+            os.path.join(os.path.dirname(os.path.dirname(self.version_dir)), ".mcp.json")
+        ]
+        
+        for mcp_config_path in search_paths:
+            if os.path.exists(mcp_config_path):
+                logger.info(f"Loading MCP configuration from: {mcp_config_path}")
+                try:
+                    with open(mcp_config_path, 'r') as f:
+                        mcp_config = json.load(f)
+                    
+                    # Convert to McpStdioServerConfig format
+                    for server_name, server_config in mcp_config.get("mcpServers", {}).items():
+                        # Check if this tool should be disabled
+                        if "all" in self.disabled_tools or server_name in self.disabled_tools:
+                            logger.info(f"Skipping disabled MCP server: {server_name}")
+                            continue
+                            
+                        # Resolve relative paths in args relative to the .mcp.json location
+                        config_dir = os.path.dirname(mcp_config_path)
+                        args = []
+                        for arg in server_config.get("args", []):
+                            if not os.path.isabs(arg) and (arg.endswith('.py') or '/' in arg):
+                                # This looks like a relative path, make it absolute
+                                args.append(os.path.abspath(os.path.join(config_dir, arg)))
+                            else:
+                                args.append(arg)
+                        
+                        # Create server configuration with supported fields
+                        mcp_servers[server_name] = McpStdioServerConfig(
+                            type="stdio",
+                            command=server_config.get("command", ""),
+                            args=args,
+                            env=server_config.get("env", {})
+                        )
+                    
+                    logger.info(f"Loaded {len(mcp_servers)} MCP servers: {list(mcp_servers.keys())}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Failed to load MCP configuration from {mcp_config_path}: {e}")
+        
+        if not mcp_servers:
+            if "all" in self.disabled_tools:
+                logger.info("All MCP tools disabled by --disable-tools flag")
+            else:
+                logger.info("No MCP configuration found - will use Claude Code's default settings")
+        
+        return mcp_servers
     
     def save_request_response(self, request_data: Dict[str, Any], response_data: Dict[str, Any]):
         """
@@ -76,11 +133,16 @@ class ClaudeCodeClientWrapper:
     
     def _run_async(self, coro):
         """Run an async coroutine in a synchronous context."""
-        # Always create a new event loop
+        # Create a new event loop every time (simpler, more predictable)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
         try:
-            return loop.run_until_complete(coro)
+            result = loop.run_until_complete(coro)
+            return result
+        except Exception as e:
+            logger.error(f"Error during async execution: {type(e).__name__}: {e}")
+            raise
         finally:
             loop.close()
             asyncio.set_event_loop(None)
@@ -113,6 +175,9 @@ class ClaudeCodeClientWrapper:
             
             prompt = "\n\n".join(prompt_parts)
             
+            # Load MCP configuration
+            mcp_servers = self.wrapper._load_mcp_config()
+            
             # Create Claude Code options
             options = ClaudeCodeOptions(
                 system_prompt=system,
@@ -120,8 +185,14 @@ class ClaudeCodeClientWrapper:
                 max_thinking_tokens=max_tokens or 8000,
                 continue_conversation=self.wrapper.session_id is not None,
                 permission_mode='bypassPermissions',  # Allow all tools for automated execution
-                cwd=self.wrapper.version_dir
+                cwd=self.wrapper.version_dir,
+                mcp_servers=mcp_servers
             )
+
+            if mcp_servers:
+                logger.info(f"Using MCP servers: {list(mcp_servers.keys())}")
+            else:
+                logger.info("No MCP servers configured - using Claude Code's default settings")
             
             # Prepare request data for logging
             request_data = {
@@ -132,7 +203,8 @@ class ClaudeCodeClientWrapper:
                     "max_thinking_tokens": options.max_thinking_tokens,
                     "continue_conversation": options.continue_conversation,
                     "permission_mode": options.permission_mode,
-                    "cwd": str(options.cwd)
+                    "cwd": str(options.cwd),
+                    "mcp_servers": {name: dict(config) for name, config in mcp_servers.items()}
                 },
                 "original_kwargs": kwargs,
                 "timestamp": datetime.now().isoformat()
