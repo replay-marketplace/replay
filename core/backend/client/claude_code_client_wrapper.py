@@ -25,6 +25,23 @@ class ClaudeCodeClientWrapper:
         self.session_id = None
         self._loop = None
         
+        # Parse disabled tools into server-level and function-level
+        self.disabled_servers = set()
+        self.disabled_functions = {}  # server_name -> set of function names
+        
+        for tool in self.disabled_tools:
+            if tool == "all":
+                self.disabled_servers.add("all")
+            elif ":" in tool:
+                # Function-level disabling: server_name:function_name
+                server_name, function_name = tool.split(":", 1)
+                if server_name not in self.disabled_functions:
+                    self.disabled_functions[server_name] = set()
+                self.disabled_functions[server_name].add(function_name)
+            else:
+                # Server-level disabling
+                self.disabled_servers.add(tool)
+        
         # Create client directory if it doesn't exist
         os.makedirs(self.client_dir, exist_ok=True)
         logger.info(f"Claude Code client wrapper initialized. Saving requests/responses to: {self.client_dir}")
@@ -49,10 +66,32 @@ class ClaudeCodeClientWrapper:
                     
                     # Convert to McpStdioServerConfig format
                     for server_name, server_config in mcp_config.get("mcpServers", {}).items():
-                        # Check if this tool should be disabled
-                        if "all" in self.disabled_tools or server_name in self.disabled_tools:
+                        # Check if this server should be completely disabled
+                        if "all" in self.disabled_servers or server_name in self.disabled_servers:
                             logger.info(f"Skipping disabled MCP server: {server_name}")
                             continue
+                            
+                        # Check if we need to disable specific functions from this server
+                        disabled_funcs = self.disabled_functions.get(server_name, set())
+                        if disabled_funcs and server_name == "tt-metal-tools":
+                            logger.info(f"Server {server_name} will have disabled functions: {disabled_funcs}")
+                            # Use the configurable server instead of the original server
+                            configurable_server_path = os.path.join(config_dir, "tools", "api_database_tools", "configurable_server.py")
+                            if os.path.exists(configurable_server_path):
+                                # Set environment variable for disabled functions
+                                env_vars = server_config.get("env", {}).copy()
+                                env_vars["DISABLED_FUNCTIONS"] = ",".join(disabled_funcs)
+                                
+                                # Create server configuration with configurable server
+                                mcp_servers[server_name] = McpStdioServerConfig(
+                                    type="stdio",
+                                    command="python",
+                                    args=[configurable_server_path],
+                                    env=env_vars
+                                )
+                                continue
+                            else:
+                                logger.warning(f"Configurable server not found at {configurable_server_path}, using original server")
                             
                         # Resolve relative paths in args relative to the .mcp.json location
                         config_dir = os.path.dirname(mcp_config_path)
@@ -78,10 +117,16 @@ class ClaudeCodeClientWrapper:
                     logger.warning(f"Failed to load MCP configuration from {mcp_config_path}: {e}")
         
         if not mcp_servers:
-            if "all" in self.disabled_tools:
+            if "all" in self.disabled_servers:
                 logger.info("All MCP tools disabled by --disable-tools flag")
             else:
                 logger.info("No MCP configuration found - will use Claude Code's default settings")
+        else:
+            # Log summary of disabled functions
+            if self.disabled_functions:
+                for server, funcs in self.disabled_functions.items():
+                    if server in mcp_servers:
+                        logger.info(f"MCP server '{server}' loaded with disabled functions: {list(funcs)}")
         
         return mcp_servers
     
