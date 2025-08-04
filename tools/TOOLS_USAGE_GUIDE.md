@@ -1,8 +1,10 @@
 ### Tool Usage Guide
 
-Once installed, the tools will be automatically discovered by Claude Code and available to use, you can verify this by calling `claude` from the terminal and asking it to test out the tools. 
+Once installed, the tools will be automatically discovered and used by the Claude Code SDK when called programmatically (such as through `replay.py`). The tools work regardless of which directory you run `replay.py` from.
 
-The tools need to be specifically configured when using the Claude Code SDK calls for programmatic use. By default, all the tools are be available to use.  A functionality has been added to the `replay.py` script which allows you to specify which tools NOT to use. This is done by passing this flag when calling the replay script:
+**Interactive Usage**: You can test the tools interactively by running `claude` from the `tools/api_database_tools` directory and asking it to test the tools. Note that interactive usage requires being in the correct directory due to the MCP server registration.
+
+**Programmatic Usage**: The tools are designed to work seamlessly with the Claude Code SDK. By default, all tools are available when using `replay.py`. A functionality has been added to the `replay.py` script which allows you to specify which tools NOT to use. This is done by passing this flag when calling the replay script:
 
 `--disable-tools <tool_1> <tool_2>` or `--disable-tools all`
 
