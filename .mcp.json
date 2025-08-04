@@ -1,7 +1,8 @@
 {
   "mcpServers": {
     "tt-metal-tools": {
-      "command": "tt-metal-mcp",
+      "command": "python",
+      "args": ["server.py"],
       "cwd": "/home/user/tt-metal/replay/tools/api_database_tools"
     }
   }
