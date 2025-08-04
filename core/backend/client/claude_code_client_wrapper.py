@@ -29,18 +29,25 @@ class ClaudeCodeClientWrapper:
         self.disabled_servers = set()
         self.disabled_functions = {}  # server_name -> set of function names
         
+        logger.info(f"Parsing disabled tools: {self.disabled_tools}")
         for tool in self.disabled_tools:
             if tool == "all":
                 self.disabled_servers.add("all")
+                logger.info(f"Disabled all servers")
             elif ":" in tool:
                 # Function-level disabling: server_name:function_name
                 server_name, function_name = tool.split(":", 1)
                 if server_name not in self.disabled_functions:
                     self.disabled_functions[server_name] = set()
                 self.disabled_functions[server_name].add(function_name)
+                logger.info(f"Disabled function {function_name} from server {server_name}")
             else:
                 # Server-level disabling
                 self.disabled_servers.add(tool)
+                logger.info(f"Disabled server {tool}")
+        
+        logger.info(f"Final disabled_servers: {self.disabled_servers}")
+        logger.info(f"Final disabled_functions: {self.disabled_functions}")
         
         # Create client directory if it doesn't exist
         os.makedirs(self.client_dir, exist_ok=True)
@@ -65,53 +72,60 @@ class ClaudeCodeClientWrapper:
                         mcp_config = json.load(f)
                     
                     # Convert to McpStdioServerConfig format
+                    # Resolve relative paths in args relative to the .mcp.json location
+                    config_dir = os.path.dirname(mcp_config_path)
+                    
                     for server_name, server_config in mcp_config.get("mcpServers", {}).items():
                         # Check if this server should be completely disabled
                         if "all" in self.disabled_servers or server_name in self.disabled_servers:
                             logger.info(f"Skipping disabled MCP server: {server_name}")
                             continue
                             
-                        # Check if we need to disable specific functions from this server
+                        # Set environment variable for disabled functions if any
                         disabled_funcs = self.disabled_functions.get(server_name, set())
+                        env_vars = server_config.get("env", {}).copy()
                         if disabled_funcs and server_name == "tt-metal-tools":
                             logger.info(f"Server {server_name} will have disabled functions: {disabled_funcs}")
-                            # Use the configurable server instead of the original server
-                            configurable_server_path = os.path.join(config_dir, "tools", "api_database_tools", "configurable_server.py")
-                            if os.path.exists(configurable_server_path):
-                                # Set environment variable for disabled functions
-                                env_vars = server_config.get("env", {}).copy()
-                                env_vars["DISABLED_FUNCTIONS"] = ",".join(disabled_funcs)
-                                
-                                # Create server configuration with configurable server
-                                mcp_servers[server_name] = McpStdioServerConfig(
-                                    type="stdio",
-                                    command="python",
-                                    args=[configurable_server_path],
-                                    env=env_vars
-                                )
-                                continue
-                            else:
-                                logger.warning(f"Configurable server not found at {configurable_server_path}, using original server")
-                            
-                        # Resolve relative paths in args relative to the .mcp.json location
-                        config_dir = os.path.dirname(mcp_config_path)
+                            env_vars["DISABLED_FUNCTIONS"] = ",".join(disabled_funcs)
+                        
+                        # Process the regular server configuration
                         args = []
                         for arg in server_config.get("args", []):
                             if not os.path.isabs(arg) and (arg.endswith('.py') or '/' in arg):
-                                # This looks like a relative path, make it absolute
-                                args.append(os.path.abspath(os.path.join(config_dir, arg)))
+                                # This looks like a relative path, resolve relative to cwd if specified
+                                cwd = server_config.get("cwd")
+                                if cwd:
+                                    # Resolve relative to the cwd directory
+                                    args.append(os.path.join(cwd, arg))
+                                else:
+                                    # Resolve relative to config directory
+                                    args.append(os.path.abspath(os.path.join(config_dir, arg)))
                             else:
                                 args.append(arg)
                         
+                        # Handle working directory by wrapping command if needed
+                        command = server_config.get("command", "")
+                        cwd = server_config.get("cwd")
+                        if cwd:
+                            # Wrap command to change directory
+                            if args:
+                                args_str = " ".join(f'"{arg}"' for arg in args)
+                                command_with_args = f"{command} {args_str}"
+                            else:
+                                command_with_args = command
+                            command = "sh"
+                            args = ["-c", f"cd {cwd} && {command_with_args}"]
+                        
                         # Create server configuration with supported fields
                         mcp_servers[server_name] = McpStdioServerConfig(
-                            type="stdio",
-                            command=server_config.get("command", ""),
+                            command=command,
                             args=args,
-                            env=server_config.get("env", {})
+                            env=env_vars
                         )
                     
                     logger.info(f"Loaded {len(mcp_servers)} MCP servers: {list(mcp_servers.keys())}")
+                    for name, config in mcp_servers.items():
+                        logger.info(f"MCP server {name} config: {dict(config)}")
                     break
                 except Exception as e:
                     logger.warning(f"Failed to load MCP configuration from {mcp_config_path}: {e}")
@@ -288,6 +302,7 @@ class ClaudeCodeClientWrapper:
             response_data = {
                 "messages": [],
                 "result": None,
+                "tool_calls": [],
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -299,19 +314,51 @@ class ClaudeCodeClientWrapper:
                     })
                 elif isinstance(message, AssistantMessage):
                     content_text = ""
+                    tool_calls = []
+                    
                     for block in message.content:
                         if isinstance(block, TextBlock):
                             content_text += block.text
+                        elif hasattr(block, 'type') and block.type == 'tool_use':
+                            # Handle tool use blocks
+                            tool_call = {
+                                "id": getattr(block, 'id', None),
+                                "name": getattr(block, 'name', None),
+                                "input": getattr(block, 'input', {})
+                            }
+                            tool_calls.append(tool_call)
+                            response_data["tool_calls"].append(tool_call)
+                            
+                            # Print tool call to stdout for immediate visibility
+                            print(f"\n🛠️  TOOL CALL: {tool_call['name']}")
+                            print(f"   Parameters: {json.dumps(tool_call['input'], indent=2)}")
+                            
                     response_data["messages"].append({
                         "type": "assistant",
-                        "content": content_text
+                        "content": content_text,
+                        "tool_calls": tool_calls
                     })
                 elif isinstance(message, SystemMessage):
-                    response_data["messages"].append({
+                    msg_data = {
                         "type": "system",
                         "subtype": message.subtype,
                         "data": message.data
-                    })
+                    }
+                    
+                    # Check if this is a tool result message
+                    if message.subtype == "tool_result" and hasattr(message, 'data'):
+                        if isinstance(message.data, dict):
+                            tool_name = message.data.get('name', 'unknown')
+                            tool_result = message.data.get('content', message.data.get('result', 'No result'))
+                            
+                            # Print tool result to stdout for immediate visibility
+                            print(f"\n✅ TOOL RESULT: {tool_name}")
+                            if isinstance(tool_result, (dict, list)):
+                                print(f"   Result: {json.dumps(tool_result, indent=2)[:500]}...")
+                            else:
+                                print(f"   Result: {str(tool_result)[:500]}...")
+                    
+                    response_data["messages"].append(msg_data)
                 elif isinstance(message, ResultMessage):
                     response_data["result"] = {
                         "subtype": message.subtype,
