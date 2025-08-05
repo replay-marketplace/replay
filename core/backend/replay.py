@@ -474,16 +474,16 @@ class Replay:
             raise ValueError(f"Unknown LLM backend: {self.llm_backend_name}")
 
     def _load_system_instructions(self):
-        try:
-            instructions_path = os.path.join(self.replay_dir, "client_instructions_with_json.txt")
-            with open(instructions_path, "r") as f:
-                self.system_instructions = f.read()
-        except FileNotFoundError:
-            raise RuntimeError("System instructions file not found in session replay folder.")
+        # System instructions are now handled by the LLM backends
+        # This method is kept for backward compatibility but doesn't load anything
+        # The backends will load their appropriate instruction files when needed
+        self.system_instructions = None
 
     def _copy_system_instructions(self):
         import pkg_resources
-        src_instructions = ["client_instructions_with_json.txt",
+        # Copy both backend-specific instruction files
+        src_instructions = ["client_instructions_with_json_claude.txt",
+                            "client_instructions_with_json_anthropic.txt",
                             "client_instructions_indentify_issue.txt"]
         dst_instructions = os.path.join(self.replay_dir)        
         for src_instruction in src_instructions:
