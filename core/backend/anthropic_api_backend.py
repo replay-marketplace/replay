@@ -26,7 +26,7 @@ class AnthropicAPIBackend(LLMBackend):
     """
     
     DEFAULT_MAX_TOKENS = 10000
-    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt"
+    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json_anthropic.txt"
     
     def __init__(self, model_name: str = "claude-3-7-sonnet-20250219", client=None):
         """

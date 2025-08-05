@@ -26,11 +26,8 @@ class FixNodeProcessor:
     """Processes FIX nodes by analyzing run logs and applying fixes to code."""
     
     # Configuration constants
-    # DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
-    DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
     DEFAULT_MAX_TOKENS = 10000
     LAST_N_ERROR_LINES = 100
-    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt" #"client_instructions_indentify_issue.txt"
     
     def process(self, replay, node: dict) -> None:
         """

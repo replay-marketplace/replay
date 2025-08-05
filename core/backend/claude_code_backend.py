@@ -26,7 +26,7 @@ class ClaudeCodeBackend(LLMBackend):
     """
     
     DEFAULT_MAX_TOKENS = 10000
-    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt"
+    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json_claude.txt"
     
     def __init__(self, client=None):
         """
