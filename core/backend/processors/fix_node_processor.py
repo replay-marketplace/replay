@@ -190,20 +190,36 @@ class FixNodeProcessor:
         return json.loads(response[json_start:json_end + 1])
 
     def _send_llm_request(self, replay, llm_request: LLMRequest) -> Dict[str, Any]:
-        """Send the LLM request and return the parsed response."""
-        # Convert to JSON format expected by LLM
+        """Send the LLM request and return the parsed response using the configured backend."""
+        logger.info(f"⚒️ Sending FIX request to LLM with {len(llm_request.run_logs_files)} run logs files and {len(llm_request.code_to_edit)} code files")
+        
+        # Use the backend to send the fix request
+        if hasattr(replay, 'llm_backend') and replay.llm_backend:
+            if replay.llm_backend_name == "claude_code":
+                return replay.llm_backend.send_fix_request(
+                    run_logs_files=llm_request.run_logs_files,
+                    code_files=llm_request.code_to_edit,
+                    read_only_files=llm_request.read_only_files,
+                    memory=llm_request.memory,
+                    replay_dir=replay.replay_dir
+                )
+            elif replay.llm_backend_name == "anthropic_api":
+                return replay.llm_backend.send_fix_request(
+                    run_logs_files=llm_request.run_logs_files,
+                    code_files=llm_request.code_to_edit,
+                    memory=llm_request.memory,
+                    replay_dir=replay.replay_dir
+                )
+        
+        # Fallback to original implementation if backend not available
         request_dict = {
             "prompt": llm_request.prompt,
-            # "run_logs_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.run_logs_files],
             "run_logs_files": [f.path for f in llm_request.run_logs_files],
-            # "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
             "code_to_edit": [f.path for f in llm_request.code_to_edit],
-            "read_only_files": llm_request.read_only_files, # [f.path for f in llm_request.read_only_files],
+            "read_only_files": llm_request.read_only_files,
             "memory": llm_request.memory
         }
         request_json = json.dumps(request_dict, indent=2)
-        
-        logger.info(f"⚒️ Sending FIX request to LLM with {len(llm_request.run_logs_files)} run logs files and {len(llm_request.code_to_edit)} code files")
         
         # Get client instructions
         system_prompt = self._get_client_instructions(replay.replay_dir)
@@ -253,15 +269,10 @@ sfpi::vFloat one = sfpi::vFloat(1.0f);  // Convert to vFloat first
             replay.state.execution.memory = response_data['memory']
             logger.info(f"🧠 Updated memory: \n{replay.state.execution.memory}")
 
-        # if 'commands_to_run' in response_data:
-        #     logger.info(f"Commands to run: {response_data['commands_to_run']}")
-        #     commands_to_run = response_data['commands_to_run']
-        #     for command in commands_to_run:
-        #         if command.startswith('get_api_reference'):
-        #             api_name = command.split('(')[1].split(')')[0]
-        #             api_reference = self._get_mock_api_reference(api_name)
-        #             replay.state.execution.memory.append("A call to get_api_reference(" + api_name + ") was requested. It returned: " + api_reference)                    
-        #             logger.info(f"✨✨✨ Tool is used. Added a reference to memory: {api_reference}")
+        # Handle commands_to_run for anthropic_api backend
+        if hasattr(replay, 'llm_backend') and replay.llm_backend_name == "anthropic_api":
+            if hasattr(replay.llm_backend, 'process_commands_in_response'):
+                replay.llm_backend.process_commands_in_response(response_data, replay)
 
     def _save_generated_file(self, file_path: str, content: str, code_dir: str) -> None:
         """Save a generated file to the code directory."""

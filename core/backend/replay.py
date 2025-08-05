@@ -95,11 +95,14 @@ class Replay:
         self,
         state: ReplayState,
         client=None,
-        use_mock: bool = False
+        use_mock: bool = False,
+        llm_backend: str = "claude_code"
     ):
         self.state = state
         self.client = client
         self.use_mock = use_mock
+        self.llm_backend_name = llm_backend
+        self.llm_backend = None  # Will be initialized in _init_llm_backend
         self.project_dir = os.path.join(self.state.input_config.output_dir, self.state.input_config.project_name)
         self.version_dir = None
         self.replay_dir = None
@@ -113,6 +116,7 @@ class Replay:
 
         self._setup_directories()
         self._init_client()
+        self._init_llm_backend()
         self._load_system_instructions()              
 
         if self.state.status not in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
@@ -124,7 +128,8 @@ class Replay:
         cls,
         input_config: InputConfig,
         client=None,
-        use_mock: bool = False
+        use_mock: bool = False,
+        llm_backend: str = "claude_code"
     ) -> 'Replay':
         """Create a new Replay instance from input configuration (recipe), always creating a new version."""
         # Find next version number
@@ -133,7 +138,7 @@ class Replay:
         os.makedirs(project_dir, exist_ok=True)
         version = cls._get_next_version(project_dir)
         state = ReplayState(input_config=input_config, version=version)
-        return cls(state, client=client, use_mock=use_mock)
+        return cls(state, client=client, use_mock=use_mock, llm_backend=llm_backend)
 
     @classmethod
     def load_checkpoint(
@@ -142,7 +147,8 @@ class Replay:
         output_dir: str = "replay_output",
         version: str = "latest",
         client=None,
-        use_mock: bool = False
+        use_mock: bool = False,
+        llm_backend: str = "claude_code"
     ) -> 'Replay':
         """Load a Replay instance from a project directory checkpoint for a specific version (or latest)."""
         logger.info(f"Creating new Replay instance from checkpoint: {output_dir} / {project_name} / {version}")
@@ -159,7 +165,7 @@ class Replay:
             loaded_state = ReplayState.from_dict(json.load(f))
             logger.info(f"State loaded from {state_path}")
             
-            return cls(loaded_state, client=client, use_mock=use_mock)
+            return cls(loaded_state, client=client, use_mock=use_mock, llm_backend=llm_backend)
 
     @staticmethod
     def _get_next_version(project_dir: str) -> str:
@@ -440,6 +446,22 @@ class Replay:
             logger.info("Using Claude Code SDK with async query wrapper")
             from core.backend.client.claude_code_client_wrapper import ClaudeCodeClientWrapper
             self.client = ClaudeCodeClientWrapper(self.version_dir, claude_config)
+
+    def _init_llm_backend(self):
+        """
+        Initialize the LLM backend based on configuration.
+        """
+        if self.llm_backend_name == "claude_code":
+            from .claude_code_backend import ClaudeCodeBackend
+            self.llm_backend = ClaudeCodeBackend(client=self.client)
+            logger.info("Initialized Claude Code backend")
+        elif self.llm_backend_name == "anthropic_api":
+            from .anthropic_api_backend import AnthropicAPIBackend
+            # For anthropic API, we need to use a standard model name
+            self.llm_backend = AnthropicAPIBackend(model_name="claude-3-7-sonnet-20250219", client=self.client)
+            logger.info("Initialized Anthropic API backend")
+        else:
+            raise ValueError(f"Unknown LLM backend: {self.llm_backend_name}")
 
     def _load_system_instructions(self):
         try:
