@@ -124,7 +124,7 @@ ckernel::add_tiles(cb_in0, cb_in1, tile_idx_0, tile_idx_1, dst_reg_idx);
 #include "compute_kernel_api/eltwise_unary/binop_with_scalar.h"
 ckernel::binop_with_scalar_tile_init();
 ckernel::mul_unary_tile(dst_reg_idx, 0x3F000000);  // Multiply by 0.5
-ckernel::div_unary_tile(dst_reg_idx, 0x40000000);  // Divide by 2.0
+ckernel::div_unary_tile(dst_reg_idx, 0x40000000);  // Divide by 2.0 - think if you really need this or if you can reformat as mul_unary instead by changing the constant!
 ckernel::add_unary_tile(dst_reg_idx, 0x40000000);  // Add 2.0
 ckernel::sub_unary_tile(dst_reg_idx, 0x40000000);  // Subtract 2.0 from input
 

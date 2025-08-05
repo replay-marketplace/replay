@@ -22,12 +22,15 @@
  * - Binary Operations: Operations between DST registers for efficient computation
  */
 
+#include "compute_kernel_api.h"
 #include "compute_kernel_api/tile_move_copy.h"
 #include "compute_kernel_api/eltwise_unary/eltwise_unary.h"
 #include "compute_kernel_api/eltwise_unary/exp.h"
 #include "compute_kernel_api/eltwise_unary/negative.h"
+#include "compute_kernel_api/eltwise_binary.h"
 #include "compute_kernel_api/eltwise_binary_sfpu.h"
 #include "compute_kernel_api/eltwise_unary/binop_with_scalar.h"
+#include "compute_kernel_api/binary_max_min.h"
 #include "llk_math_eltwise_unary_sfpu_params.h"
 
 namespace NAMESPACE {
