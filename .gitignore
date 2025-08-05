@@ -132,3 +132,6 @@ cython_debug/
 replay_output/
 
 replay_env/
+
+# MCP configuration (contains absolute paths, should not be committed)
+.mcp.json

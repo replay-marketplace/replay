@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "tt-metal-tools": {
-      "command": "python",
-      "args": ["server.py"]
-    }
-  }
-}
