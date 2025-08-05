@@ -98,7 +98,7 @@ class LLMBackend(ABC):
         Returns:
             str: The system instructions content
         """
-        instructions_file = "client_instructions_with_json.txt"
+        instructions_file = self.CLIENT_INSTRUCTIONS_FILE
         instructions_path = os.path.join(replay_dir, instructions_file)
         
         if os.path.exists(instructions_path):
