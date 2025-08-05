@@ -49,6 +49,7 @@ class ClaudeCodeBackend(LLMBackend):
         self.client = client  # Will be set by replay context
         
         logger.info(f"Initialized ClaudeCodeBackend with model: {self.model_name}")
+        # Log configuration status only when using Claude Code backend
         config.log_configuration_status()
     
     def package_files_for_request(self, code_files: List[FileReference], 
@@ -189,11 +190,11 @@ class ClaudeCodeBackend(LLMBackend):
     
     def send_fix_request(self, run_logs_files: List[FileReference], 
                         code_files: List[FileReference],
-                        read_only_files: List[str],
-                        memory: List[str],
-                        replay_dir: str) -> Dict[str, Any]:
+                        read_only_files: List[str] = None,
+                        memory: List[str] = None,
+                        replay_dir: str = None) -> Dict[str, Any]:
         """
-        Send a fix request following the FixNodeProcessor pattern.
+        Send a fix request following the Claude Code pattern.
         
         Args:
             run_logs_files: Run log files with content
@@ -205,7 +206,14 @@ class ClaudeCodeBackend(LLMBackend):
         Returns:
             Dict containing the parsed LLM response
         """
-        # Build request following FixNodeProcessor pattern
+        # Ensure defaults are set
+        if read_only_files is None:
+            read_only_files = []
+        if memory is None:
+            memory = []
+        
+        # Override super() implementation to use file paths only for claude_code
+        # Build request following FixNodeProcessor pattern with paths only
         request_dict = {
             "prompt": self.get_fix_node_prompt(),
             "run_logs_files": [f.path for f in run_logs_files],
@@ -219,7 +227,9 @@ class ClaudeCodeBackend(LLMBackend):
         logger.info(f"⚒️ Sending FIX request to LLM with {len(run_logs_files)} run logs files and {len(code_files)} code files")
         
         # Get system instructions
-        system_prompt = self.get_prompt_node_system_instructions(replay_dir)
+        system_prompt = None
+        if replay_dir:
+            system_prompt = self.get_prompt_node_system_instructions(replay_dir)
         
         # Send request
         return self.send_request("", request_json, system_prompt)

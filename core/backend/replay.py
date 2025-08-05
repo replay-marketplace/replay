@@ -426,7 +426,7 @@ class Replay:
 
     def _init_client(self):
         """
-        Setup the client based on configuration (use_mock or Claude Code SDK)
+        Setup the client based on configuration (use_mock, backend type)
         """
         if self.client is not None:
             return
@@ -437,15 +437,25 @@ class Replay:
             # Wrap the mock client to save all requests and responses
             from core.backend.client.client_wrapper import ClientWrapper
             self.client = ClientWrapper(base_client, self.version_dir)
-        else:
+        elif self.llm_backend_name == "claude_code":
             # Use Claude Code SDK with async query wrapped for synchronous interface
-            from core.backend.claude_code_config import ClaudeCodeConfig
-            claude_config = ClaudeCodeConfig()
-            claude_config.log_configuration_status()
-            
             logger.info("Using Claude Code SDK with async query wrapper")
             from core.backend.client.claude_code_client_wrapper import ClaudeCodeClientWrapper
-            self.client = ClaudeCodeClientWrapper(self.version_dir, claude_config)
+            self.client = ClaudeCodeClientWrapper(self.version_dir)
+        elif self.llm_backend_name == "anthropic_api":
+            # Use standard Anthropic API client
+            logger.info("Using standard Anthropic API client")
+            try:
+                import anthropic
+                # Create standard Anthropic client
+                self.client = anthropic.Anthropic()
+                logger.info("Initialized standard Anthropic client")
+            except ImportError as e:
+                raise RuntimeError("anthropic package is required for anthropic_api backend. Install with: pip install anthropic") from e
+            except Exception as e:
+                raise RuntimeError(f"Failed to initialize Anthropic client: {e}") from e
+        else:
+            raise ValueError(f"Unknown LLM backend: {self.llm_backend_name}")
 
     def _init_llm_backend(self):
         """

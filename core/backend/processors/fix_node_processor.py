@@ -194,53 +194,26 @@ class FixNodeProcessor:
         logger.info(f"⚒️ Sending FIX request to LLM with {len(llm_request.run_logs_files)} run logs files and {len(llm_request.code_to_edit)} code files")
         
         # Use the backend to send the fix request
-        if hasattr(replay, 'llm_backend') and replay.llm_backend:
-            if replay.llm_backend_name == "claude_code":
-                return replay.llm_backend.send_fix_request(
-                    run_logs_files=llm_request.run_logs_files,
-                    code_files=llm_request.code_to_edit,
-                    read_only_files=llm_request.read_only_files,
-                    memory=llm_request.memory,
-                    replay_dir=replay.replay_dir
-                )
-            elif replay.llm_backend_name == "anthropic_api":
-                return replay.llm_backend.send_fix_request(
-                    run_logs_files=llm_request.run_logs_files,
-                    code_files=llm_request.code_to_edit,
-                    memory=llm_request.memory,
-                    replay_dir=replay.replay_dir
-                )
+        if not hasattr(replay, 'llm_backend') or not replay.llm_backend:
+            raise RuntimeError("Replay instance must have a configured llm_backend. This indicates a configuration error.")
         
-        # Fallback to original implementation if backend not available
-        request_dict = {
-            "prompt": llm_request.prompt,
-            "run_logs_files": [f.path for f in llm_request.run_logs_files],
-            "code_to_edit": [f.path for f in llm_request.code_to_edit],
-            "read_only_files": llm_request.read_only_files,
-            "memory": llm_request.memory
-        }
-        request_json = json.dumps(request_dict, indent=2)
-        
-        # Get client instructions
-        system_prompt = self._get_client_instructions(replay.replay_dir)
-        
-        # Send to LLM
-        response = replay.client.messages.create(
-            model=self.DEFAULT_MODEL,
-            max_tokens=self.DEFAULT_MAX_TOKENS,
-            system=system_prompt,
-            messages=[{"role": "user", "content": request_json}]
-        )
-        logger.info(f"LLM usage: {response.usage}")
-        
-        # Parse response        
-        response_json = self._extract_json(response.content[0].text)
-        try:
-            return response_json
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"Response content: {response.content[0].text}")
-            raise
+        if replay.llm_backend_name == "claude_code":
+            return replay.llm_backend.send_fix_request(
+                run_logs_files=llm_request.run_logs_files,
+                code_files=llm_request.code_to_edit,
+                read_only_files=llm_request.read_only_files,
+                memory=llm_request.memory,
+                replay_dir=replay.replay_dir
+            )
+        elif replay.llm_backend_name == "anthropic_api":
+            return replay.llm_backend.send_fix_request(
+                run_logs_files=llm_request.run_logs_files,
+                code_files=llm_request.code_to_edit,
+                memory=llm_request.memory,
+                replay_dir=replay.replay_dir
+            )
+        else:
+            raise RuntimeError(f"Unknown LLM backend: {replay.llm_backend_name}")
 
     def _get_mock_api_reference(self, api_name: str) -> str:
         """Get the API reference for a given API name."""

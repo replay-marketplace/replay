@@ -178,26 +178,33 @@ class AnthropicAPIBackend(LLMBackend):
     
     def send_fix_request(self, run_logs_files: List[FileReference], 
                         code_files: List[FileReference],
-                        memory: List[str],
-                        replay_dir: str) -> Dict[str, Any]:
+                        read_only_files: List[str] = None,
+                        memory: List[str] = None,
+                        replay_dir: str = None) -> Dict[str, Any]:
         """
         Send a fix request following the origin/main FixNodeProcessor pattern.
         
         Args:
             run_logs_files: Run log files with content
             code_files: Code files that can be edited
+            read_only_files: List of read-only files (set to empty for anthropic_api)
             memory: Memory items from replay state
             replay_dir: Directory containing system instructions
             
         Returns:
             Dict containing the parsed LLM response
         """
-        # Build request following origin/main FixNodeProcessor pattern
+        # For anthropic_api backend, read_only_files should be empty array (as per requirement)
+        if read_only_files is None:
+            read_only_files = []
+        
+        # Override super() implementation to use full file contents for anthropic_api
+        # Build request following origin/main FixNodeProcessor pattern with full contents
         request_dict = {
             "prompt": self.get_fix_node_prompt_with_commands(),
             "run_logs_files": [{"path_and_filename": f.path, "contents": f.content} for f in run_logs_files],
             "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in code_files],
-            "memory": memory
+            "memory": memory if memory is not None else []
         }
         
         request_json = json.dumps(request_dict, indent=2)
@@ -205,7 +212,9 @@ class AnthropicAPIBackend(LLMBackend):
         logger.info(f"⚒️ Sending FIX request to LLM with {len(run_logs_files)} run logs files and {len(code_files)} code files")
         
         # Get system instructions
-        system_prompt = self.get_prompt_node_system_instructions(replay_dir)
+        system_prompt = None
+        if replay_dir:
+            system_prompt = self.get_prompt_node_system_instructions(replay_dir)
         
         # Send request
         return self.send_request("", request_json, system_prompt)

@@ -131,6 +131,45 @@ class LLMBackend(ABC):
         }
         """
     
+    def send_fix_request(self, run_logs_files: List, code_files: List, 
+                        read_only_files: List = None, memory: List[str] = None, 
+                        replay_dir: str = None) -> Dict[str, Any]:
+        """
+        Send a fix request to the LLM backend.
+        
+        This is a common implementation that handles the basic structure.
+        Subclasses can override for backend-specific behavior.
+        
+        Args:
+            run_logs_files: Run log files with content
+            code_files: Code files that can be edited
+            read_only_files: List of read-only files (optional)
+            memory: Memory items from replay state (optional)
+            replay_dir: Directory containing system instructions (optional)
+            
+        Returns:
+            Dict containing the parsed LLM response
+        """
+        # For anthropic_api backend, read_only_files should be empty
+        if read_only_files is None:
+            read_only_files = []
+        
+        # Build request with the fix prompt
+        prompt = self.get_fix_node_prompt()
+        
+        # Package files for request - subclasses will handle this differently
+        files_json = self.package_files(
+            [f.path for f in code_files + run_logs_files] + read_only_files
+        )
+        
+        # Get system instructions
+        system_prompt = None
+        if replay_dir:
+            system_prompt = self.get_prompt_node_system_instructions(replay_dir)
+        
+        # Send request
+        return self.send_request(prompt, files_json, system_prompt)
+    
     # Abstract methods that concrete implementations must provide
     
     @abstractmethod

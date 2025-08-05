@@ -173,54 +173,26 @@ class PromptNodeProcessor:
         )
         
         # Use the backend to send the prompt request
-        if hasattr(replay, 'llm_backend') and replay.llm_backend:
-            if replay.llm_backend_name == "claude_code":
-                return replay.llm_backend.send_prompt_request(
-                    prompt=llm_request.prompt,
-                    code_files=llm_request.code_to_edit,
-                    read_only_files=llm_request.read_only_files,
-                    memory=llm_request.memory,
-                    replay_dir=replay.replay_dir
-                )
-            elif replay.llm_backend_name == "anthropic_api":
-                return replay.llm_backend.send_prompt_request(
-                    prompt=llm_request.prompt,
-                    code_files=llm_request.code_to_edit,
-                    read_only_files=llm_request.read_only_files,
-                    replay_dir=replay.replay_dir
-                )
+        if not hasattr(replay, 'llm_backend') or not replay.llm_backend:
+            raise RuntimeError("Replay instance must have a configured llm_backend. This indicates a configuration error.")
         
-        # Fallback to original implementation if backend not available
-        request_dict = {
-            "prompt": llm_request.prompt,
-            "code_to_edit": [f.path for f in llm_request.code_to_edit],
-            "read_only_files": [f.path for f in llm_request.read_only_files],
-            "memory": llm_request.memory
-        }
-        
-        request_json = json.dumps(request_dict, indent=2)
-        
-        # Get client instructions
-        system_prompt = self._get_client_instructions(replay.replay_dir)
-        
-        # Send to LLM
-        response = replay.client.messages.create(
-            model=self.DEFAULT_MODEL,
-            max_tokens=self.DEFAULT_MAX_TOKENS,
-            system=system_prompt,
-            messages=[{"role": "user", "content": request_json}]
-        )
-        logger.info(f"LLM usage: {response.usage}")
-        
-        # Parse response
-        response_json = self._extract_json(response.content[0].text)
-        
-        try:
-            return response_json
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"Response content: {response.content[0].text}")
-            raise
+        if replay.llm_backend_name == "claude_code":
+            return replay.llm_backend.send_prompt_request(
+                prompt=llm_request.prompt,
+                code_files=llm_request.code_to_edit,
+                read_only_files=llm_request.read_only_files,
+                memory=llm_request.memory,
+                replay_dir=replay.replay_dir
+            )
+        elif replay.llm_backend_name == "anthropic_api":
+            return replay.llm_backend.send_prompt_request(
+                prompt=llm_request.prompt,
+                code_files=llm_request.code_to_edit,
+                read_only_files=llm_request.read_only_files,
+                replay_dir=replay.replay_dir
+            )
+        else:
+            raise RuntimeError(f"Unknown LLM backend: {replay.llm_backend_name}")
 
     def _process_generic_llm_response(self, response_data: Dict[str, Any], replay) -> None:
         """Process the LLM response and save generated files."""
