@@ -39,7 +39,13 @@ class ConditionalNodeProcessor:
             raise ValueError(f"exit_code is required for CONDITIONAL node {node_id}")
         logger.info(f"Run exit code: {run_exit_code}")
 
-        condition_result = run_exit_code == 0
+        should_fail = contents.get("should_fail", False)
+        if should_fail:
+            condition_result = run_exit_code == 1
+        else:
+            condition_result = run_exit_code == 0
+
+
         contents['condition'] = condition_result
         logger.info(f"Condition evaluated to: {condition_result}")
 

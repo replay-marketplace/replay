@@ -7,6 +7,7 @@ We are creating a compute kernel for COSH function.
 * Think step by step, how many intermediate variables must be kept at any time?
 Write the chain as a test into a new file called "test_lowered_cosh.py", compare to torch
 Each line should be no more than 1 primitive operation
+Instead of using any functions from the math module, use their counterparts from torch.
 
 <lowering>
 atanh(x)
@@ -23,11 +24,13 @@ return d / 2
 
 /PROMPT
 Update @code:test_newop.py to compare against torch COSH
-Reference the lowering from @code:test_lowered_cosh.py to see what operations to combine in @code:tt_eltwise_sfpu.cpp as LLK calls
+Reference the lowering from @code:test_lowered_cosh.py to see what operations to combine in @code:tt_eltwise_sfpu2.cpp as LLK calls
 @docs:kernel_api_compute_operations.md
 @docs:kernel_api_circular_buffers.md
 @docs:example_compute_llk_where.cpp
+@docs:tt-metal-kernel-apis.md
+@docs:tt-metal-api-reference.xml
 
-Make sure to declare any additional CBs you need in @code:test_newop.py prepare_newop_program function - this makes sure you can access them inside kernel @code:tt_eltwise_sfpu.cpp
+Make sure to declare any additional CBs you need in @code:test_newop.py prepare_newop_program function - this makes sure you can access them inside kernel @code:tt_eltwise_sfpu2.cpp
 
 /DEBUG_LOOP @command:"python3 test_newop.py"

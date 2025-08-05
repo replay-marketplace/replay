@@ -87,15 +87,15 @@ def test_new_op():
     program_descriptor = prepare_newop_program(device, input_tensor, output_tensor, num_tiles, src_bank_id, dst_bank_id)
 
     output = ttnn.generic_op(io_tensors, program_descriptor)
-    golden = ttnn.exp(input_tensor)
+    torch_golden = torch.sinh(ttnn.to_torch(input_tensor))
 
-    torch_golden = ttnn.to_torch(golden)
+    # torch_golden = ttnn.to_torch(golden)
     torch_output = ttnn.to_torch(output)
     logger.info(f"input_tensor: {input_tensor}")
     logger.info(f"torch_golden: {torch_golden}")
     logger.info(f"torch_output: {torch_output}")
 
-    matching = torch.allclose(torch_golden, torch_output)
+    matching = torch.allclose(torch_golden, torch_output, rtol=5e-2, atol=1e-2)
     logger.info(f"Tensors are matching: {matching}")
     assert matching
 

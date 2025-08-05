@@ -95,11 +95,14 @@ class Replay:
         self,
         state: ReplayState,
         client=None,
-        use_mock: bool = False
+        use_mock: bool = False,
+        llm_backend: str = "claude_code"
     ):
         self.state = state
         self.client = client
         self.use_mock = use_mock
+        self.llm_backend_name = llm_backend
+        self.llm_backend = None  # Will be initialized in _init_llm_backend
         self.project_dir = os.path.join(self.state.input_config.output_dir, self.state.input_config.project_name)
         self.version_dir = None
         self.replay_dir = None
@@ -113,6 +116,7 @@ class Replay:
 
         self._setup_directories()
         self._init_client()
+        self._init_llm_backend()
         self._load_system_instructions()              
 
         if self.state.status not in (ReplayStatus.LOADED_PROGRAM, ReplayStatus.RUNNING_PROGRAM):
@@ -124,7 +128,8 @@ class Replay:
         cls,
         input_config: InputConfig,
         client=None,
-        use_mock: bool = False
+        use_mock: bool = False,
+        llm_backend: str = "claude_code"
     ) -> 'Replay':
         """Create a new Replay instance from input configuration (recipe), always creating a new version."""
         # Find next version number
@@ -133,7 +138,7 @@ class Replay:
         os.makedirs(project_dir, exist_ok=True)
         version = cls._get_next_version(project_dir)
         state = ReplayState(input_config=input_config, version=version)
-        return cls(state, client=client, use_mock=use_mock)
+        return cls(state, client=client, use_mock=use_mock, llm_backend=llm_backend)
 
     @classmethod
     def load_checkpoint(
@@ -142,7 +147,8 @@ class Replay:
         output_dir: str = "replay_output",
         version: str = "latest",
         client=None,
-        use_mock: bool = False
+        use_mock: bool = False,
+        llm_backend: str = "claude_code"
     ) -> 'Replay':
         """Load a Replay instance from a project directory checkpoint for a specific version (or latest)."""
         logger.info(f"Creating new Replay instance from checkpoint: {output_dir} / {project_name} / {version}")
@@ -159,7 +165,7 @@ class Replay:
             loaded_state = ReplayState.from_dict(json.load(f))
             logger.info(f"State loaded from {state_path}")
             
-            return cls(loaded_state, client=client, use_mock=use_mock)
+            return cls(loaded_state, client=client, use_mock=use_mock, llm_backend=llm_backend)
 
     @staticmethod
     def _get_next_version(project_dir: str) -> str:
@@ -420,7 +426,7 @@ class Replay:
 
     def _init_client(self):
         """
-        Setup the client based on configuration (use_mock or ANTHROPIC_API_KEY)
+        Setup the client based on configuration (use_mock, backend type)
         """
         if self.client is not None:
             return
@@ -428,28 +434,56 @@ class Replay:
         if self.use_mock:
             from core.backend.client.mock_anthropic import MockAnthropicClient
             base_client = MockAnthropicClient()
+            # Wrap the mock client to save all requests and responses
+            from core.backend.client.client_wrapper import ClientWrapper
+            self.client = ClientWrapper(base_client, self.version_dir)
+        elif self.llm_backend_name == "claude_code":
+            # Use Claude Code SDK with async query wrapped for synchronous interface
+            logger.info("Using Claude Code SDK with async query wrapper")
+            from core.backend.client.claude_code_client_wrapper import ClaudeCodeClientWrapper
+            self.client = ClaudeCodeClientWrapper(self.version_dir)
+        elif self.llm_backend_name == "anthropic_api":
+            # Use standard Anthropic API client
+            logger.info("Using standard Anthropic API client")
+            try:
+                import anthropic
+                # Create standard Anthropic client
+                self.client = anthropic.Anthropic()
+                logger.info("Initialized standard Anthropic client")
+            except ImportError as e:
+                raise RuntimeError("anthropic package is required for anthropic_api backend. Install with: pip install anthropic") from e
+            except Exception as e:
+                raise RuntimeError(f"Failed to initialize Anthropic client: {e}") from e
         else:
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise RuntimeError("ANTHROPIC_API_KEY environment variable not set")
-            import anthropic
-            base_client = anthropic.Anthropic(api_key=api_key)
-        
-        # Wrap the client to save all requests and responses
-        from core.backend.client.client_wrapper import ClientWrapper
-        self.client = ClientWrapper(base_client, self.version_dir)
+            raise ValueError(f"Unknown LLM backend: {self.llm_backend_name}")
+
+    def _init_llm_backend(self):
+        """
+        Initialize the LLM backend based on configuration.
+        """
+        if self.llm_backend_name == "claude_code":
+            from .claude_code_backend import ClaudeCodeBackend
+            self.llm_backend = ClaudeCodeBackend(client=self.client)
+            logger.info("Initialized Claude Code backend")
+        elif self.llm_backend_name == "anthropic_api":
+            from .anthropic_api_backend import AnthropicAPIBackend
+            # For anthropic API, we need to use a standard model name
+            self.llm_backend = AnthropicAPIBackend(model_name="claude-3-7-sonnet-20250219", client=self.client)
+            logger.info("Initialized Anthropic API backend")
+        else:
+            raise ValueError(f"Unknown LLM backend: {self.llm_backend_name}")
 
     def _load_system_instructions(self):
-        try:
-            instructions_path = os.path.join(self.replay_dir, "client_instructions_with_json.txt")
-            with open(instructions_path, "r") as f:
-                self.system_instructions = f.read()
-        except FileNotFoundError:
-            raise RuntimeError("System instructions file not found in session replay folder.")
+        # System instructions are now handled by the LLM backends
+        # This method is kept for backward compatibility but doesn't load anything
+        # The backends will load their appropriate instruction files when needed
+        self.system_instructions = None
 
     def _copy_system_instructions(self):
         import pkg_resources
-        src_instructions = ["client_instructions_with_json.txt",
+        # Copy both backend-specific instruction files
+        src_instructions = ["client_instructions_with_json_claude.txt",
+                            "client_instructions_with_json_anthropic.txt",
                             "client_instructions_indentify_issue.txt"]
         dst_instructions = os.path.join(self.replay_dir)        
         for src_instruction in src_instructions:

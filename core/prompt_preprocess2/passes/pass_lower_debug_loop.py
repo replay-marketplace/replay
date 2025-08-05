@@ -1,6 +1,7 @@
 import networkx as nx
 import logging
 from typing import List
+import re
 
 from ..ir.ir import EpicIR, Opcode
 
@@ -114,11 +115,14 @@ def replace_debug_loop_node(epic: EpicIR, debug_loop_node: dict, debug_loop_node
     """
     
     debug_loop_node_command = debug_loop_node.get('contents', {}).get('command', None)
+    debug_loop_should_fail = '@should_fail' in debug_loop_node_command
+    debug_loop_node_command = re.sub(r'@should_fail', '', debug_loop_node_command).strip('" ')
     if debug_loop_node_command is None:
         raise ValueError(f"Command not found for DEBUG_LOOP node: {debug_loop_node}")
     else:
         print(f"Command: \n\t{debug_loop_node_command}")
 
+    print(f"Expect command to {'fail' if debug_loop_should_fail else 'pass'}")
     # Delete the DEBUG_LOOP node
     debug_loop_predecessors = list(epic.graph.predecessors(debug_loop_node_id))
     debug_loop_successors = list(epic.graph.successors(debug_loop_node_id))
@@ -145,6 +149,7 @@ def replace_debug_loop_node(epic: EpicIR, debug_loop_node: dict, debug_loop_node
                                     "false_node_target": "",
                                     "iteration_max":   5, # runtime
                                     "condition": False,   # runtime
+                                    "should_fail": debug_loop_should_fail,
                                     })
     
 

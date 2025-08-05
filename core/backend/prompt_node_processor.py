@@ -26,7 +26,7 @@ class PromptNodeProcessor:
     
     # Configuration constants
     #DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
-    DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
+    DEFAULT_MODEL = "anthropic/claude-sonnet-4-20250514"
     DEFAULT_MAX_TOKENS = 10000
     CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt"
     
@@ -162,8 +162,10 @@ class PromptNodeProcessor:
         # Convert to JSON format expected by LLM
         request_dict = {
             "prompt": llm_request.prompt,
-            "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
-            "read_only_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.read_only_files],
+            # "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
+            "code_to_edit": [f.path for f in llm_request.code_to_edit],
+            # "read_only_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.read_only_files],
+            "read_only_files": [f.path for f in llm_request.read_only_files],
             "memory": llm_request.memory
         }
         

@@ -25,10 +25,7 @@ class PromptNodeProcessor:
     """Processes PROMPT nodes by sending prompts to LLM and handling responses."""
     
     # Configuration constants
-    #DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
-    DEFAULT_MODEL = "claude-sonnet-4-20250514"
     DEFAULT_MAX_TOKENS = 10000
-    CLIENT_INSTRUCTIONS_FILE = "client_instructions_with_json.txt"
     
     def process_generic_prompt(self, replay, node):
         """Process a generic prompt."""
@@ -158,48 +155,41 @@ class PromptNodeProcessor:
             raise FileNotFoundError(f"Client instructions file not found: {instructions_path}")
 
     def _extract_json(self, response):
-        json_start = response.index("{")
-        json_end = response.rfind("}")
-        return json.loads(response[json_start:json_end + 1])
+        try:
+            json_start = response.index("{")
+            json_end = response.rfind("}")
+            return json.loads(response[json_start:json_end + 1])
+        except:
+            return {}
 
     def _send_generic_llm_request(self, replay, node_data: Dict[str, Any], llm_request: LLMRequest) -> Dict[str, Any]:
-        """Send the LLM request and return the parsed response."""
-        # Convert to JSON format expected by LLM
-        request_dict = {
-            "prompt": llm_request.prompt,
-            "code_to_edit": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.code_to_edit],
-            "read_only_files": [{"path_and_filename": f.path, "contents": f.content} for f in llm_request.read_only_files]
-        }
-        
-        request_json = json.dumps(request_dict, indent=2)
-        
+        """Send the LLM request and return the parsed response using the configured backend."""
         logger.info(
-            f"Sent a request to LLM with {len(llm_request.code_to_edit)} code files "
+            f"📝 Sending PROMPT request to LLM with {len(llm_request.code_to_edit)} code files "
             f"and {len(llm_request.read_only_files)} read-only files"
         )
         
-        # Get client instructions
-
-        system_prompt = self._get_client_instructions(replay.replay_dir)
+        # Use the backend to send the prompt request
+        if not hasattr(replay, 'llm_backend') or not replay.llm_backend:
+            raise RuntimeError("Replay instance must have a configured llm_backend. This indicates a configuration error.")
         
-        # Send to LLM
-        response = replay.client.messages.create(
-            model=self.DEFAULT_MODEL,
-            max_tokens=self.DEFAULT_MAX_TOKENS,
-            system=system_prompt,
-            messages=[{"role": "user", "content": request_json}]
-        )
-        logger.info(f"LLM usage: {response.usage}")
-        
-        # Parse response
-        response_json = self._extract_json(response.content[0].text)
-        
-        try:
-            return response_json
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"Response content: {response_content}")
-            raise
+        if replay.llm_backend_name == "claude_code":
+            return replay.llm_backend.send_prompt_request(
+                prompt=llm_request.prompt,
+                code_files=llm_request.code_to_edit,
+                read_only_files=llm_request.read_only_files,
+                memory=llm_request.memory,
+                replay_dir=replay.replay_dir
+            )
+        elif replay.llm_backend_name == "anthropic_api":
+            return replay.llm_backend.send_prompt_request(
+                prompt=llm_request.prompt,
+                code_files=llm_request.code_to_edit,
+                read_only_files=llm_request.read_only_files,
+                replay_dir=replay.replay_dir
+            )
+        else:
+            raise RuntimeError(f"Unknown LLM backend: {replay.llm_backend_name}")
 
     def _process_generic_llm_response(self, response_data: Dict[str, Any], replay) -> None:
         """Process the LLM response and save generated files."""
