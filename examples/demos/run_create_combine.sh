@@ -72,7 +72,7 @@ echo ""
 mkdir -p "$OUTPUT_DIR/$PROJECT_NAME"
 
 # Create prompt from template
-python3 update_template.py "$PROMPT_FILE" "$OP_NAME" "$NEW_PROMPT_FILE"
+python3 examples/utils/update_template.py "$PROMPT_FILE" "$OP_NAME" "$NEW_PROMPT_FILE"
 
 PROMPT_FILE="$NEW_PROMPT_FILE"
 echo "PWD:"
