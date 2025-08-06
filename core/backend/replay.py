@@ -9,7 +9,7 @@ from core.dir_preprocessing import setup_project_directories, post_replay_dir_cl
 from core.prompt_preprocess2.processor3 import prompt_preprocess3
 from core.prompt_preprocess2.ir.ir import EpicIR, Opcode
 from core.backend.processors import NodeProcessorRegistry
-from core.backend.git_manager import GitManager
+from core.backend.git_manager import GitManager, MockGitManager
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ class Replay:
         self.latest_dir = os.path.join(self.project_dir, "latest")
         self.system_instructions = None
         self.node_processor_registry = NodeProcessorRegistry.create_registry()
-        self.git_manager = None  # Will be initialized in _setup_directories
+        self.git_manager = MockGitManager(self.project_dir)  # Will be overridden in _setup_directories if git is enabled
 
         self._setup_directories()
         self._init_client()
@@ -228,8 +228,7 @@ class Replay:
         self.state.execution.step_count += 1
         
         # Commit changes after step execution
-        if self.git_manager:
-            self.git_manager.commit_step(current_node, opcode, self.state.execution.step_count)
+        self.git_manager.commit_step(current_node, opcode, self.state.execution.step_count)
 
         # Check if this is a control flow node that determines its own next node
         if opcode == Opcode.CONDITIONAL:
@@ -420,8 +419,7 @@ class Replay:
         self._copy_reference_content()
         
         # Initial commit after compilation
-        if self.git_manager:
-            self.git_manager.commit_initial()
+        self.git_manager.commit_initial()
         
         self.status = ReplayStatus.LOADED_PROGRAM
 
@@ -521,7 +519,7 @@ class Replay:
         
         self._copy_system_instructions()
         
-        # Initialize git manager only if not disabled
+        # Initialize git manager (real or mock based on disable_git setting)
         if not self.disable_git:
             self.git_manager = GitManager(self.version_dir)
             
@@ -533,7 +531,7 @@ class Replay:
                 # New session - initialize new git repo
                 self.git_manager.initialize_repo()
         else:
-            logger.info("Git operations disabled - skipping git manager initialization")
+            logger.info("Git operations disabled - using mock git manager")
         
         # Only update latest symlink if this is actually the latest version
         # Check if this version is actually the latest
