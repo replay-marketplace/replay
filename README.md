@@ -35,6 +35,7 @@ pip install -e ".[dev]"
 ## Prerequisites
 
 - Python 3.8 or higher
+- Node.js 18 or higher (required by claude_code_sdk dependency)
 - Anthropic API key (set as environment variable `ANTHROPIC_API_KEY`)
 
 ## Quick Start
