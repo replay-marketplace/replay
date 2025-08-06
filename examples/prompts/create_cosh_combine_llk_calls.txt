@@ -34,3 +34,9 @@ Reference the lowering from @code:test_lowered_cosh.py to see what operations to
 Make sure to declare any additional CBs you need in @code:test_newop.py prepare_newop_program function - this makes sure you can access them inside kernel @code:tt_eltwise_sfpu2.cpp
 
 /DEBUG_LOOP @command:"python3 test_newop.py"
+
+/PROMPT
+Make the minimal changes to achieve the following:
+Rename @code:ttnn_op_impl.py to `ttnn_cosh_impl.py`
+Rename the `ttnn_op` function inside @code:ttnn_op_impl.py to `ttnn_cosh`
+
