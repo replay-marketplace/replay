@@ -40,3 +40,9 @@ Reference the lowering from @code:test_lowered_{{OP_NAME}}.py to see what operat
 @docs:tt-metal-api-reference.xml
 
 /DEBUG_LOOP @command:"timeout 30 python3 test_newop.py"
+
+/PROMPT
+Make the minimal changes to achieve the following:
+Rename @code:ttnn_op_impl.py to `ttnn_{{OP_NAME}}_impl.py`
+Rename the `ttnn_op` function inside @code:ttnn_op_impl.py to `ttnn_{{OP_NAME}}`
+

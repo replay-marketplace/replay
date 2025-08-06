@@ -31,3 +31,9 @@ Reference the lowering from @code:test_lowered_cosh.py and implement the operati
 @docs:tt-metal-api-reference.xml
 
 /DEBUG_LOOP @command:"python3 test_newop.py"
+
+/PROMPT
+Make the minimal changes to achieve the following:
+Rename @code:ttnn_op_impl.py to `ttnn_cosh_impl.py`
+Rename the `ttnn_op` function inside @code:ttnn_op_impl.py to `ttnn_cosh`
+
