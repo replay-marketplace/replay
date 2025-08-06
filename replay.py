@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--mock', action='store_true', help='Use mock client instead of real Anthropic API')
     parser.add_argument('--llm', default='claude_code', choices=['claude_code', 'anthropic_api'], help='LLM backend to use (default: claude_code)')
     parser.add_argument('--version', default='latest', help='Project version to use for step mode (default: latest)')
+    parser.add_argument('--disable-git', action='store_true', default=False, help='Disable git repository creation and commit operations')
     parser.add_argument('input_prompt_file', nargs='?', help='Path to the input prompt file (for new run)')
     parser.add_argument('project_name', nargs='?', help='Name of the project (for new run)')
     parser.add_argument('--output_dir', default='replay_output', help='Output directory (for new run)')
@@ -35,7 +36,8 @@ def main():
                 output_dir=args.output_dir,
                 version=args.version,
                 use_mock=args.mock,
-                llm_backend=args.llm
+                llm_backend=args.llm,
+                disable_git=args.disable_git
             )
         except FileNotFoundError as e:
             logger.error(f"Can't load replay from project directory: {e}")
@@ -56,7 +58,7 @@ def main():
             project_name=args.project_name,
             output_dir=args.output_dir
         )
-        runner = Replay.from_recipe(input_config, use_mock=args.mock, llm_backend=args.llm)
+        runner = Replay.from_recipe(input_config, use_mock=args.mock, llm_backend=args.llm, disable_git=args.disable_git)
         if args.setup_only:
             runner.compile()
             runner.save_state()

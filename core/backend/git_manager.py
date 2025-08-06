@@ -219,4 +219,90 @@ class GitManager:
         Returns:
             bool: True if git repository is initialized
         """
-        return self._initialized 
+        return self._initialized
+
+
+class MockGitManager:
+    """Mock implementation of GitManager for when git operations are disabled."""
+    
+    def __init__(self, version_dir: str):
+        """
+        Initialize MockGitManager.
+        
+        Args:
+            version_dir: Path to the version directory (unused but kept for compatibility)
+        """
+        self.version_dir = version_dir
+        self._initialized = True
+    
+    def initialize_repo(self) -> bool:
+        """Mock git repository initialization."""
+        logger.info("Git operations disabled - skipping repository initialization")
+        return True
+    
+    def load_existing_repo(self) -> bool:
+        """Mock loading of existing git repository."""
+        logger.info("Git operations disabled - skipping existing repository load")
+        return True
+    
+    def commit_initial(self) -> bool:
+        """Mock initial commit after compilation."""
+        logger.info("Git operations disabled - skipping initial commit")
+        return True
+    
+    def commit_step(self, node_data: dict, opcode: Opcode, step_count: int) -> bool:
+        """Mock commit after step execution."""
+        commit_message = self._generate_commit_message(node_data, opcode, step_count)
+        logger.info(f"Git operations disabled - would commit: {commit_message}")
+        return True
+    
+    def _generate_commit_message(self, node_data: dict, opcode: Opcode, step_count: int) -> str:
+        """Generate commit message (same logic as GitManager for consistency)."""
+        opcode_name = opcode.name.lower()
+        
+        # Get node description or contents for more context
+        node_description = ""
+        if 'contents' in node_data:
+            contents = node_data['contents']
+            if isinstance(contents, dict):
+                if 'path' in contents:
+                    node_description = f" - {contents['path']}"
+                elif 'content' in contents:
+                    # Truncate content for commit message
+                    content_preview = str(contents['content'])[:50]
+                    if len(str(contents['content'])) > 50:
+                        content_preview += "..."
+                    node_description = f" - {content_preview}"
+                elif 'prompt' in contents:
+                    prompt_preview = str(contents['prompt'])[:50]
+                    if len(str(contents['prompt'])) > 50:
+                        prompt_preview += "..."
+                    node_description = f" - {prompt_preview}"
+        
+        # Handle specific opcodes with more detailed messages
+        if opcode == Opcode.TEMPLATE:
+            template_path = node_data.get('contents', {}).get('path', 'unknown template')
+            return f"Step {step_count}: Load template {template_path}"
+        elif opcode == Opcode.DOCS:
+            docs_path = node_data.get('contents', {}).get('path', 'unknown docs')
+            return f"Step {step_count}: Load docs {docs_path}"
+        elif opcode == Opcode.PROMPT:
+            return f"Step {step_count}: LLM prompt{node_description}"
+        elif opcode == Opcode.RUN:
+            return f"Step {step_count}: Run command{node_description}"
+        elif opcode == Opcode.CONDITIONAL:
+            return f"Step {step_count}: Conditional branch{node_description}"
+        elif opcode == Opcode.FIX:
+            return f"Step {step_count}: Fix issue{node_description}"
+        elif opcode == Opcode.EXIT:
+            return f"Step {step_count}: Exit program{node_description}"
+        elif opcode == Opcode.DEBUG_LOOP:
+            return f"Step {step_count}: Debug loop{node_description}"
+        elif opcode == Opcode.READ_ONLY:
+            return f"Step {step_count}: Read-only operation{node_description}"
+        else:
+            return f"Step {step_count}: {opcode_name}{node_description}"
+    
+    def is_initialized(self) -> bool:
+        """Mock check if git repository is initialized."""
+        return True

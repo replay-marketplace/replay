@@ -9,7 +9,7 @@ from core.dir_preprocessing import setup_project_directories, post_replay_dir_cl
 from core.prompt_preprocess2.processor3 import prompt_preprocess3
 from core.prompt_preprocess2.ir.ir import EpicIR, Opcode
 from core.backend.processors import NodeProcessorRegistry
-from core.backend.git_manager import GitManager
+from core.backend.git_manager import GitManager, MockGitManager
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -96,12 +96,14 @@ class Replay:
         state: ReplayState,
         client=None,
         use_mock: bool = False,
-        llm_backend: str = "claude_code"
+        llm_backend: str = "claude_code",
+        disable_git: bool = False
     ):
         self.state = state
         self.client = client
         self.use_mock = use_mock
         self.llm_backend_name = llm_backend
+        self.disable_git = disable_git
         self.llm_backend = None  # Will be initialized in _init_llm_backend
         self.project_dir = os.path.join(self.state.input_config.output_dir, self.state.input_config.project_name)
         self.version_dir = None
@@ -112,7 +114,7 @@ class Replay:
         self.latest_dir = os.path.join(self.project_dir, "latest")
         self.system_instructions = None
         self.node_processor_registry = NodeProcessorRegistry.create_registry()
-        self.git_manager = None  # Will be initialized in _setup_directories
+        self.git_manager = MockGitManager(self.project_dir)  # Will be overridden in _setup_directories if git is enabled
 
         self._setup_directories()
         self._init_client()
@@ -129,7 +131,8 @@ class Replay:
         input_config: InputConfig,
         client=None,
         use_mock: bool = False,
-        llm_backend: str = "claude_code"
+        llm_backend: str = "claude_code",
+        disable_git: bool = False
     ) -> 'Replay':
         """Create a new Replay instance from input configuration (recipe), always creating a new version."""
         # Find next version number
@@ -138,7 +141,7 @@ class Replay:
         os.makedirs(project_dir, exist_ok=True)
         version = cls._get_next_version(project_dir)
         state = ReplayState(input_config=input_config, version=version)
-        return cls(state, client=client, use_mock=use_mock, llm_backend=llm_backend)
+        return cls(state, client=client, use_mock=use_mock, llm_backend=llm_backend, disable_git=disable_git)
 
     @classmethod
     def load_checkpoint(
@@ -148,7 +151,8 @@ class Replay:
         version: str = "latest",
         client=None,
         use_mock: bool = False,
-        llm_backend: str = "claude_code"
+        llm_backend: str = "claude_code",
+        disable_git: bool = False
     ) -> 'Replay':
         """Load a Replay instance from a project directory checkpoint for a specific version (or latest)."""
         logger.info(f"Creating new Replay instance from checkpoint: {output_dir} / {project_name} / {version}")
@@ -165,7 +169,7 @@ class Replay:
             loaded_state = ReplayState.from_dict(json.load(f))
             logger.info(f"State loaded from {state_path}")
             
-            return cls(loaded_state, client=client, use_mock=use_mock, llm_backend=llm_backend)
+            return cls(loaded_state, client=client, use_mock=use_mock, llm_backend=llm_backend, disable_git=disable_git)
 
     @staticmethod
     def _get_next_version(project_dir: str) -> str:
@@ -224,8 +228,7 @@ class Replay:
         self.state.execution.step_count += 1
         
         # Commit changes after step execution
-        if self.git_manager:
-            self.git_manager.commit_step(current_node, opcode, self.state.execution.step_count)
+        self.git_manager.commit_step(current_node, opcode, self.state.execution.step_count)
 
         # Check if this is a control flow node that determines its own next node
         if opcode == Opcode.CONDITIONAL:
@@ -416,8 +419,7 @@ class Replay:
         self._copy_reference_content()
         
         # Initial commit after compilation
-        if self.git_manager:
-            self.git_manager.commit_initial()
+        self.git_manager.commit_initial()
         
         self.status = ReplayStatus.LOADED_PROGRAM
 
@@ -517,16 +519,19 @@ class Replay:
         
         self._copy_system_instructions()
         
-        # Initialize git manager
-        self.git_manager = GitManager(self.version_dir)
-        
-        # Check if we're loading from a checkpoint (existing git repo)
-        if os.path.exists(os.path.join(self.version_dir, ".git")):
-            # Loading from checkpoint - load existing git repo
-            self.git_manager.load_existing_repo()
+        # Initialize git manager (real or mock based on disable_git setting)
+        if not self.disable_git:
+            self.git_manager = GitManager(self.version_dir)
+            
+            # Check if we're loading from a checkpoint (existing git repo)
+            if os.path.exists(os.path.join(self.version_dir, ".git")):
+                # Loading from checkpoint - load existing git repo
+                self.git_manager.load_existing_repo()
+            else:
+                # New session - initialize new git repo
+                self.git_manager.initialize_repo()
         else:
-            # New session - initialize new git repo
-            self.git_manager.initialize_repo()
+            logger.info("Git operations disabled - using mock git manager")
         
         # Only update latest symlink if this is actually the latest version
         # Check if this version is actually the latest
