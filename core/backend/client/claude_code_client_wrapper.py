@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, AsyncIterator
 from claude_code_sdk import query, ClaudeCodeOptions, UserMessage, AssistantMessage, SystemMessage, ResultMessage, TextBlock
 from claude_code_sdk.types import PermissionMode
+from claude_code_sdk._errors import ProcessError, CLINotFoundError, CLIConnectionError, CLIJSONDecodeError
 
 logger = logging.getLogger(__name__)
 
@@ -81,15 +82,18 @@ class ClaudeCodeClientWrapper:
             loop = asyncio.get_running_loop()
             # If we're already in an event loop, we need to run in a thread
             import concurrent.futures
-            import threading
             
             def run_in_thread():
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)
                 try:
                     return new_loop.run_until_complete(coro)
+                except Exception as e:
+                    logger.error(f"Error running async coroutine: {e}")
+                    raise e
                 finally:
                     new_loop.close()
+                    asyncio.set_event_loop(None)
             
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(run_in_thread)
@@ -100,8 +104,12 @@ class ClaudeCodeClientWrapper:
             asyncio.set_event_loop(loop)
             try:
                 return loop.run_until_complete(coro)
+            except Exception as e:
+                logger.error(f"Error running async coroutine: {e}")
+                raise e
             finally:
                 loop.close()
+                asyncio.set_event_loop(None)
     
     class MessagesWrapper:
         """Wrapper to provide compatibility with the standard Anthropic client interface."""
@@ -159,7 +167,12 @@ class ClaudeCodeClientWrapper:
             logger.info(f"prompt: {prompt}")
             
             # Run the async query using our helper method
-            response = self.wrapper._run_async(self._query_claude_code(prompt, options))
+            try:
+                response = self.wrapper._run_async(self._query_claude_code(prompt, options))
+            except Exception as e:
+                logger.error(f"Error during _run_async execution: {type(e).__name__}: {e}")
+                logger.error(f"This may be related to asyncio event loop handling or Claude CLI issues")
+                raise
             response_data = self._format_response_data(response)
             
             # Save the request-response pair
@@ -173,16 +186,53 @@ class ClaudeCodeClientWrapper:
             messages = []
             result_message = None
             
-            async for message in query(prompt=prompt, options=options):
-                messages.append(message)
-                if isinstance(message, ResultMessage):
-                    result_message = message
-                    self.wrapper.session_id = message.session_id
-            
-            return {
-                "messages": messages,
-                "result": result_message
-            }
+            try:
+                async for message in query(prompt=prompt, options=options):
+                    messages.append(message)
+                    if isinstance(message, ResultMessage):
+                        result_message = message
+                        self.wrapper.session_id = message.session_id
+                
+                return {
+                    "messages": messages,
+                    "result": result_message
+                }
+            except ProcessError as e:
+                # Log detailed process error information
+                error_details = {
+                    "error_type": "ProcessError",
+                    "exit_code": getattr(e, 'exit_code', 'unknown'),
+                    "command": getattr(e, 'command', 'unknown'),
+                    "stdout": getattr(e, 'stdout', 'not available'),
+                    "stderr": getattr(e, 'stderr', 'not available'),
+                    "message": str(e),
+                    "prompt_length": len(prompt),
+                    "options": {
+                        "cwd": getattr(options, 'cwd', None),
+                        "max_turns": getattr(options, 'max_turns', None),
+                        "permission_mode": getattr(options, 'permission_mode', None),
+                        "allowed_tools": getattr(options, 'allowed_tools', None),
+                    }
+                }
+                logger.error(f"Claude Code ProcessError with detailed info: {json.dumps(error_details, indent=2, default=str)}")
+                raise
+            except CLINotFoundError as e:
+                logger.error(f"Claude CLI not found: {e}")
+                logger.error("Please ensure Claude Code CLI is installed: npm install -g @anthropic-ai/claude-code")
+                raise
+            except CLIConnectionError as e:
+                logger.error(f"Claude CLI connection error: {e}")
+                logger.error("Check network connectivity and Claude CLI installation")
+                raise
+            except CLIJSONDecodeError as e:
+                logger.error(f"Claude CLI JSON decode error: {e}")
+                logger.error("The Claude CLI returned malformed JSON - this may indicate a CLI version issue")
+                raise
+            except Exception as e:
+                logger.error(f"Unexpected error during Claude Code query: {type(e).__name__}: {e}")
+                logger.error(f"Prompt length: {len(prompt)}")
+                logger.error(f"Options: {options}")
+                raise
         
         def _format_response_data(self, response):
             """Format the response data for logging."""
